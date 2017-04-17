@@ -23,6 +23,9 @@ trim_overreading <- function(marker, reads, percentID){
   require(GenomicRanges)
   require(Biostrings)
   
+  submat <- banmat()
+  max_marker_length <- nchar(marker)
+  
   # Construct all partial marker sequences used for end alignments
   markers <- sapply(0:(nchar(marker)-1), function(i){
     substr(marker, 1, nchar(marker) - i)
@@ -32,10 +35,18 @@ trim_overreading <- function(marker, reads, percentID){
   alignments <- do.call(
     rbind,
     lapply(markers, function(marker, reads, percentID){
-      mismatch <- round( nchar(marker) - percentID*nchar(marker) )
-      vmp <- vmatchPattern(marker, reads, max.mismatch = mismatch)
-      as.data.frame(unlist(vmp))
-    }, reads = reads, percentID = percentID))
+      pwa <- pairwiseAlignment(
+        reads, 
+        as.character(marker), 
+        type = "overlap",
+        substitutionMatrix = submat,
+        gapOpening = 3, 
+        gapExtension = 1, 
+        scoreOnly = FALSE)
+      pwa <- pwa[pwa@score/nchar(marker) >= percentID]
+      data.frame(pwa@pattern@range, names = names(pwa@pattern@unaligned))}, 
+    reads = reads, 
+    percentID = percentID))
   
   # Filter partial alignments to only contain end of reads
   alignments$read_length <- width(reads)[
@@ -54,10 +65,7 @@ trim_overreading <- function(marker, reads, percentID){
     ignore.strand = TRUE)
   
   # Cut reads where marker aligned
-  trim_reads <- reads[seqnames(aln_ranges)]
-  trim_reads <- DNAStringSet(trim_reads, start = 1, end = start(aln_ranges)-1)
-  
-  # Gather all trimmed and untrimmed reads and reorder to match input
-  trimmed_reads <- c(trim_reads, reads[!names(reads) %in% names(trim_reads)])
-  trimmed_reads[names(reads)]
+  reads[seqnames(aln_ranges)] <- DNAStringSet(
+    reads[seqnames(aln_ranges)], start = 1, end = start(aln_ranges)-1)
+  reads
 }

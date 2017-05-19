@@ -1,7 +1,7 @@
 # Initial processing of read
-data_dir <- "~/data/projects/guideseq_analysis/results/170324_initial_run_w_new_pipeline_pos_strand/demultiplexed"
-code_dir <- "~/dev/scripts/seqTrimmer"
-output_dir <- "~/data/projects/guideseq_analysis/results/170324_initial_run_w_new_pipeline_pos_strand/trimmed"
+data_dir <- "~/data/projects/guideseq_analysis/results/170411_second_sample_set_neg_strand/demultiplexed"
+code_dir <- "~/dev/scripts/seqTrimR"
+output_dir <- "~/data/projects/guideseq_analysis/results/170411_second_sample_set_neg_strand/trimmed"
 
 if(!dir.exists(output_dir)){
   attempt <- try(system(paste0("mkdir ", output_dir)))
@@ -19,7 +19,7 @@ if(all(loaded)){
 }
 
 r1.lead <- c("")
-r2.lead <- DNAStringSet(c("ACATATGACAACTCAATTAAAC"))
+r2.lead <- DNAStringSet(c("TTGAGTTGTCATATGTTAATAACGGTAT"))
 r1.over <- DNAStringSet(reverseComplement(r2.lead), end = 15)
 r2.over <- DNAStringSet(reverseComplement(DNAStringSet(
   c("ACACTCTTTCCCTACACGACGCTCTTCCGATCT"))), end = 15)
@@ -37,7 +37,7 @@ trim_over <- file.path(code_dir, "supporting_scripts/trim_overreading.R")
 samples <- unique(str_extract(list.files(data_dir), "^[\\w]+"))
 samples <- samples[!samples %in% c("ambiguous", "unassigned")]
 
-buster <- makeCluster(6)
+buster <- makeCluster(8)
 
 clusterExport(
   cl = buster, varlist = c("banmat_path", "trim_lead", "trim_over"))

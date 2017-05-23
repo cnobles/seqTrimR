@@ -50,4 +50,7 @@ pw <- pairwiseAlignment(
   gapExtension = 5, 
   scoreOnly = FALSE)
 
+code_dir <- "."
+cmdline <- c("test.fasta.gz", "-o", "trimmed.fasta", "-l", "ATGCNNNNTCT", "-r", "ACATATGACAACTCAATTAAAC", "--leadMisMatch", "0", "--overMisMatch", 3, "--collectRandomIDs", "random.fasta", "-c", "2")
+args <- parser$parse_args(cmdline)
 

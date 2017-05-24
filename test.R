@@ -54,3 +54,5 @@ code_dir <- "."
 cmdline <- c("test.fasta.gz", "-o", "trimmed.fasta", "-l", "ATGCNNNNTCT", "-r", "ACATATGACAACTCAATTAAAC", "--leadMisMatch", "0", "--overMisMatch", 3, "--collectRandomIDs", "random.fasta", "-c", "2")
 args <- parser$parse_args(cmdline)
 
+debug <- c("test.fasta.gz", "-o", "trimmed.fasta", "-r", "ACATATGACAACTCAATTAAAC", "--overMisMatch", "3")
+args <- parser$parse_args(debug)

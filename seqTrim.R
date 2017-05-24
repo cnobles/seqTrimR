@@ -15,10 +15,10 @@ parser$add_argument(
 parser$add_argument(
   "-o", "--output", nargs = 1, type = "character", help = "Output file name.")
 parser$add_argument(
-  "-l", "--leadTrimSeq", nargs = 1, type = "character", default = NULL,
+  "-l", "--leadTrimSeq", nargs = 1, type = "character", default = "",
   help = "Sequence to trim from 5' end of reads, or the leading sequence. See README for sequence flexibility.")
 parser$add_argument(
-  "-r", "--overTrimSeq", nargs = 1, type = "character", default = NULL,
+  "-r", "--overTrimSeq", nargs = 1, type = "character", default = "",
   help = "Sequence to trim from 3' end of reads, or the overreading sequence. See README for sequence flexibility.")
 parser$add_argument(
   "--phasing", nargs = 1, type = "integer", default = 0, 
@@ -183,17 +183,19 @@ if(args$cores == 0){
     trimmedSeqs <- trimmedSeqs$trimmedSequences
   }
   
-  # Determine percent identity from allowable mismatch.
-  percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
-    nchar(args$overTrimSeq)
+  if(nchar(args$overTrimSeq) > 0){
+    # Determine percent identity from allowable mismatch.
+    percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
+      nchar(args$overTrimSeq)
   
-  # Trim 3' end or overreading protion of sequences.
-  trimmedSeqs <- trim_overreading(
-    trimmedSeqs, 
-    trimSequence = args$overTrimSeq, 
-    percentID = percentID, 
-    maxSeqLength = args$overMaxLength
-  )
+    # Trim 3' end or overreading protion of sequences.
+    trimmedSeqs <- trim_overreading(
+      trimmedSeqs, 
+      trimSequence = args$overTrimSeq, 
+      percentID = percentID, 
+      maxSeqLength = args$overMaxLength
+    )
+  }
 }else{
   # Split sequences up evenly across cores for trimming
   split.seqs <- split(
@@ -244,20 +246,21 @@ if(args$cores == 0){
   # the overTrimSeq, and solely requiring mismatches could lead to some issues.
   # Therefore the same percent identity is requried across all alignments, 
   # however long.
-  percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
-    nchar(args$overTrimSeq)
+  if(nchar(args$overTrimSeq) > 0){  
+    percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
+      nchar(args$overTrimSeq)
   
-  # Trim 3' end or overreading protion of the sequence.
-  trimmedSeqs <- unlist(DNAStringSetList(parLapply(
-    buster,
-    trimmedSeqs,
-    trim_overreading,
-    trimSequence = args$overTrimSeq, 
-    percentID = percentID, 
-    maxSeqLength = args$overMaxLength
-  )))
-  names(trimmedSeqs) <- gsub("^[0-9]+\\.", "", names(trimmedSeqs))
-  
+    # Trim 3' end or overreading protion of the sequence.
+    trimmedSeqs <- unlist(DNAStringSetList(parLapply(
+      buster,
+      trimmedSeqs,
+      trim_overreading,
+      trimSequence = args$overTrimSeq, 
+      percentID = percentID, 
+      maxSeqLength = args$overMaxLength
+    )))
+    names(trimmedSeqs) <- gsub("^[0-9]+\\.", "", names(trimmedSeqs))
+  }
   # Stop buster before he gets out of control.
   stopCluster(buster)
 }

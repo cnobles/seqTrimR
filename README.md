@@ -1,6 +1,25 @@
 # seqTrimR
 Trims 5' and 3' nucleotide sequences from paired-end reads based on designated sequences and/or quality scores.
 --------------------------------------------------------------------------------
+Trimming diagram:
+```
+         leading trimming                    overreading trimming
+         ----------CA                                    TCA-----
+         ||||||||||||                                    ||||||||    
+[seq] 5' ----------CAAGTC----------------------------TCCATCA-----3'
+
+[result] AGTC----------------------------TCCA
+```
+Random ID collection diagram:
+```
+         leading trimming                    overreading trimming
+         ----NNNN--CA                                    TCA-----
+         ||||    ||||                                    ||||||||    
+[seq] 5' ----CGCT--CAAGTC----------------------------TCCATCA-----3'
+
+[result] AGTC----------------------------TCCA
+[random] CGCT
+```
 Usage:
 ```
 Rscript seqTrim.R seqFile.fastq -o output.fastq -l leadingTrimSequence 
@@ -9,6 +28,30 @@ Rscript seqTrim.R seqFile.fastq -o output.fastq -l leadingTrimSequence \
   -r overReadingTrimSequence --phasing 8 --leadMisMatch 2 --overMisMatch 1 \
   --overMaxLength 20 --collectRandomIDs --compress --cores 10
 ```
+## Trimming sequence flexibility
+The arguments **[leadTrimSeq]** and **[overTrimSeq]** take character string inputs, such as below.
+```
+# [leadTrimSeq] examples
+ATGCCGTTAGCTATGC	    #Fixed nucleotide sequence
+ATGCCGTTNNNNNNAGCTATGC	    #Random 6 nucleotide barcode embedded in sequence
+ATGCCGNNNNTTAGNNNNCTATGC    #Dual 4 nucleotide barcodes embedded in sequence
+# Note: Random nucleotides from within leading trim sequences containing random 
+#   embeded nucleotides can be collected using the [collectRandomIDs] argument.
+
+# [overTrimSeq] examples
+GCTAACGTAC			  #Short 10 nucleotide fixed sequence
+GCTAACGTACGTTTCAAGCTACGGACATGC    #Longer nucleotide fixed sequence
+GCTAACGTACGTTTCNNNNNNCGGACATGC    #Longer nucleotide sequence with 
+				  #  embedded random sequence
+# Note: Longer overreading sequences can take longer to process, alternatively
+#   using the argument [overMaxLength] will limit the number of nucleotides
+#   from the beginning to improve performance. Using this argument does not 
+#   change the allowed mismatch parameter, which will always be based on the
+#   full length sequence.
+```
+Using the argument **[collectRandomIDs]** will collect the random sequences from within the leading trimming sequence whenever a match is made. Random sequences are returned in the order in which they appear from 5' to 3' (left to right). Multiple output file names can be given to name each random sequence file captured after the **[collectRandomIDs]** flag. 
+
+Additionally, if random or ambiguous nucleotide sequences are to be used in matching, the argument **[ignoreAmbiguousNts]** can be used to ignore collection of random sequences. The pattern matching will follow the ambiguous nucleotide code.
 
 ## Arguments
 **[seqFile]** Sequence file to trim, either fasta or fastq (gzip compression tolerated).

@@ -33,7 +33,7 @@ trim_overreading <- function(seqs, trimSequence,
   
   if(!is.null(maxSeqLength)){
     trimSequence <- Biostrings::DNAStringSet(
-      trimSequence, start = 1L, end = maxSeqLength)
+      trimSequence, start = 1L, end = min(nchar(trimSequence), maxSeqLength))
   }
   
   trimSeqs <- sapply(0:(nchar(trimSequence)-1), function(i){

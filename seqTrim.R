@@ -27,8 +27,8 @@ parser$add_argument(
   "--maxMisMatch", nargs = 1, type = "integer", default = NULL,
   help = "Maximum allowable mismatches in leading or overreading trim sequences.")
 parser$add_argument(
-  "--leadMisMatch", nargs = 1, type = "integer", default = 0,
-  help = "Maximum allowable mismatches in leading trim sequence. Default = 0.")
+  "--leadMisMatch", nargs = "+", type = "integer", default = 0,
+  help = "Maximum allowable mismatches in leading trim sequence. Default = 0. If multiple matching regions for leading seq, separate mismatches allowed using a space.")
 parser$add_argument(
   "--overMisMatch", nargs = 1, type = "integer", default = 0,
   help = "Maximum allowable mismatches in overreading trim sequence. Default = 0.")

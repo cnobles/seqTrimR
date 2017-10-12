@@ -78,6 +78,10 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
          to fixed fragments within the trimSequence.")
   }
   
+  # Remove seqs that do not have enough sequence for analysis
+  # Cutoff = length(trimSequence)
+  seqs <- seqs[width(seqs) >= nchar(trimSequence)]
+  
   # Serially align the segment(s) from trimSequence to seqs
   aln <- do.call(c, lapply(1:length(tSegRanges), function(i, tSegRanges, seqs){
     tSeq <- names(tSegRanges[i])

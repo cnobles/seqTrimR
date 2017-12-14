@@ -10,7 +10,7 @@ code_dir <- dirname(
 parser <- ArgumentParser(
   description = "R-based nucleotide sequence trimmer. Trim both leading and overreading ends of sequences.")
 parser$add_argument(
-  "seqFile", nargs = 1, type = "character", default = NULL,
+  "seqFile", nargs = 1, type = "character", default = "NA",
   help = "Sequence file to trim, either fasta or fastq format.")
 parser$add_argument(
   "-o", "--output", nargs = 1, type = "character", help = "Output file name.")
@@ -24,7 +24,7 @@ parser$add_argument(
   "--phasing", nargs = 1, type = "integer", default = 0, 
   help = "Number of nucleotides to remove from 5' end of sequence before trimming. Default = 0.")
 parser$add_argument(
-  "--maxMisMatch", nargs = 1, type = "integer", default = NULL,
+  "--maxMisMatch", nargs = 1, type = "integer", default = "NA",
   help = "Maximum allowable mismatches in leading or overreading trim sequences.")
 parser$add_argument(
   "--leadMisMatch", nargs = "+", type = "integer", default = 0,
@@ -55,11 +55,11 @@ parser$add_argument(
 
 args <- parser$parse_args(commandArgs(trailingOnly = TRUE))
 
-if(is.null(args$seqFile)){
+if(args$seqFile == "NA"){
   stop("Please choose a sequence file (fasta or fastq).")
 }
 
-if(!is.null(args$maxMisMatch)){
+if(args$maxMisMatch != "NA"){
   args$leadMisMatch <- args$maxMisMatch
   args$overMisMatch <- args$maxMisMatch
 }

@@ -15,10 +15,10 @@ parser$add_argument(
 parser$add_argument(
   "-o", "--output", nargs = 1, type = "character", help = "Output file name.")
 parser$add_argument(
-  "-l", "--leadTrimSeq", nargs = 1, type = "character", default = "",
+  "-l", "--leadTrimSeq", nargs = 1, type = "character", default = ".",
   help = "Sequence to trim from 5' end of reads, or the leading sequence. See README for sequence flexibility.")
 parser$add_argument(
-  "-r", "--overTrimSeq", nargs = 1, type = "character", default = "",
+  "-r", "--overTrimSeq", nargs = 1, type = "character", default = ".",
   help = "Sequence to trim from 3' end of reads, or the overreading sequence. See README for sequence flexibility.")
 parser$add_argument(
   "--phasing", nargs = 1, type = "integer", default = 0, 
@@ -73,6 +73,14 @@ if(!args$collectRandomIDs == FALSE){
     message("No random nucleotides (Ns) found in leadTrimSeq. Turning off collection of randomIDs.")
     args$collectRandomIDs <- FALSE
   }
+}
+
+if(args$leadTrimSeq == "."){
+  args$leadTrimSeq <- ""
+}
+
+if(args$overTrimSeq == "."){
+  args$overTrimSeq <- ""
 }
 
 input_table <- data.frame(

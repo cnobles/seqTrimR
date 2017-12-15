@@ -20,8 +20,13 @@ write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
   
   if(seqType == "fasta"){
     if(compress){
-      writeXStringSet(
-        seqs, filepath = paste0(file, ".gz"), compress = TRUE, format = "fasta")
+      if(grepl(".gz$", file)){
+        writeXStringSet(
+          seqs, filepath = file, compress = TRUE, format = "fasta")    
+      }else{
+        writeXStringSet(
+          seqs, filepath = paste0(file, ".gz"), compress = TRUE, format = "fasta")
+      }
     }else{
       writeXStringSet(
         seqs, filepath = file, compress = FALSE, format = "fasta")
@@ -32,9 +37,15 @@ write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
     quals@quality@ranges <- seqs@ranges
     
     if(compress){
-      writeXStringSet(
-        seqs, filepath = paste0(file, ".gz"), compress = TRUE, 
-        format = "fastq", qualities = quals@quality)
+      if(grepl(".gz$", file)){
+        writeXStringSet(
+          seqs, filepath = file, compress = TRUE, 
+          format = "fastq", qualities = quals@quality)
+      }else{    
+        writeXStringSet(
+          seqs, filepath = paste0(file, ".gz"), compress = TRUE, 
+          format = "fastq", qualities = quals@quality)
+      }
     }else{
       writeXStringSet(
         seqs, filepath = file, compress = FALSE, 

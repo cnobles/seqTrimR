@@ -32,9 +32,22 @@ write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
         seqs, filepath = file, compress = FALSE, format = "fasta")
     }
   }else{
+    # Load read names and identify in object the original starts
     quals <- Biostrings::quality(pointer)
-    names(quals@quality) <- ShortRead::id(pointer)
-    quals@quality@ranges <- seqs@ranges
+    oriWidth <- width(quals)
+    oriStarts <- oriWidth * (seq(1:length(oriWidth))-1) + 1
+
+    seqNames <- as.character(ShortRead::id(pointer))
+    names(quals@quality) <- seqNames
+    includedNames <- seqNames %in% names(seqs)
+    seqs <- seqs[seqNames[includedNames]]
+    quals@quality <- quals@quality[seqNames[includedNames]]
+    
+    # Transfer trimming to quality ranges
+    quals@quality <- narrow(
+      quals@quality,
+      start = seqs@ranges@start - oriStarts[includedNames] + 1,
+      width = seqs@ranges@width)
     
     if(compress){
       if(grepl(".gz$", file)){

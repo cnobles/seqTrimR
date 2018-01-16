@@ -34,8 +34,8 @@ write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
   }else{
     # Load read names and identify in object the original starts
     quals <- Biostrings::quality(pointer)
-    oriWidth <- width(quals)
-    oriStarts <- oriWidth * (seq(1:length(oriWidth))-1) + 1
+    oriWidth <- quals@quality@ranges@width
+    oriStarts <- quals@quality@ranges@start
 
     seqNames <- as.character(ShortRead::id(pointer))
     names(quals@quality) <- seqNames

@@ -49,10 +49,22 @@ parser$add_argument(
   "--noFiltering", action = "store_true",
   help = "Will not filter reads based on leadTrimSeq, the default behavior.")
 parser$add_argument(
+  "--noQualTrimming", action = "store_true",
+  help = "Will not quality trim reads, the default behavior.")
+parser$add_argument(
+  "--badQualBases", nargs = 1, type = "integer", default = 5,
+  help = "Number of bases below threshold in sliding window before read is trimmed. Default = 5")
+parser$add_argument(
+  "--qualSlidingWindow", nargs = 1, type = "integer", default = 10,
+  help = "Slinding window size for which to assess quality scores below threshold. Default = 10")
+parser$add_argument(
+  "--qualThreshold", nargs = 1, type = "character", default = '?',
+  help = "Quality threshold for trimming, minimum allowable score. Default = '?', Q30")
+parser$add_argument(
   "--compress", action = "store_true", help = "Output fastq files are gzipped.")
 parser$add_argument(
-  "-c", "--cores", nargs = 1, default = 0, type = "integer", 
-  help = "Max cores to be used. If 0 (default), program will not utilize parallel processing.")
+  "-c", "--cores", nargs = 1, default = 1, type = "integer", 
+  help = "Max cores to be used. If 0 or 1 (default), program will not utilize parallel processing.")
 
 args <- parser$parse_args(commandArgs(trailingOnly = TRUE))
 
@@ -84,15 +96,21 @@ if(args$overTrimSeq == "."){
   args$overTrimSeq <- ""
 }
 
+if(args$cores == 0){
+  args$cores <- 1
+}
+
 input_table <- data.frame(
   "Variables" = paste0(names(args), " :"), 
   "Values" = sapply(1:length(args), function(i){
     paste(args[[i]], collapse = ", ")}))
 input_table <- input_table[
-  match(c("seqFile :", "output :", "leadTrimSeq :", "overTrimSeq :", "phasing :", 
-          "maxMisMatch :", "leadMisMatch :", "overMisMatch :", "overMaxLength :", 
-          "minSeqLength :", "collectRandomIDs :", "ignoreAmbiguousNts :", 
-          "noFiltering :", "compress :", "cores :"),
+  match(c("seqFile :", "output :", "leadTrimSeq :", "overTrimSeq :", 
+          "phasing :", "maxMisMatch :", "leadMisMatch :", "overMisMatch :", 
+          "overMaxLength :", "minSeqLength :", "collectRandomIDs :", 
+          "ignoreAmbiguousNts :", "noFiltering :", "noQualTrimming :", 
+          "badQualBases :", "qualSlidingWindow :", "qualThreshold :", 
+          "compress :", "cores :"),
         input_table$Variables),]
 pandoc.title("seqTrimR Inputs")
 pandoc.table(data.frame(input_table, row.names = NULL), 
@@ -100,7 +118,7 @@ pandoc.table(data.frame(input_table, row.names = NULL),
              split.tables = Inf)
 
 # Load additional R-packages
-if(args$cores > 0){
+if(args$cores > 1){
   addPacks <- c("stringr", "ShortRead", "BiocGenerics", "parallel",
                 "IRanges", "GenomicRanges", "Biostrings")
 }else{
@@ -118,9 +136,9 @@ if(!all(addPacksLoaded)){
   stop("Check dependancies.")
 }
 
-if(args$cores > 0){
+if(args$cores > 1){
   if(args$cores > parallel::detectCores()){
-    message("Requested cores is greater than availible for system. Changing to cores to max allowed.")
+    message("Requested cores is greater than availible for system. Changing cores to max allowed.")
     args$cores <- detectCores()
   }
 }
@@ -168,6 +186,19 @@ if(seqType == "fasta"){
 
 seqs <- ShortRead::sread(seqPointer)
 names(seqs) <- ShortRead::id(seqPointer)
+
+# Quality trimming, trim from left to remove consecutive bad quality bases.
+## Below block sets the OpenMP threads to the cores specified in args.
+if(!args$noQualTrimming){
+  nthreads <- .Call(ShortRead:::.set_omp_threads, as.integer(args$cores))
+  on.exit(.Call(ShortRead:::.set_omp_threads, nthreads))
+
+  seqPointer <- ShortRead::trimTailw(
+    object = seqPointer, 
+    k = args$badQualBases, 
+    a = args$qualThreshold, 
+    halfwidth = round(args$qualSlidingWindow/2))
+}
 
 # Trim sequences, either on a single core or multiple cores
 if(args$cores <= 1){

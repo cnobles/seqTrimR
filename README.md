@@ -53,6 +53,9 @@ Using the argument **[collectRandomIDs]** will collect the random sequences from
 
 Additionally, if random or ambiguous nucleotide sequences are to be used in matching, the argument **[ignoreAmbiguousNts]** can be used to ignore collection of random sequences. The pattern matching will follow the ambiguous nucleotide code.
 
+## Quality trimming
+By default, seqTrimR will quality trim from the left to right in the reads provided. This feature is controlled by the arguments **[badQualBases]**, **[qualSlidingWindow]**, and **[qualThreshold]**. This feature can be disabled by passing the flag "**[--noQualTrimming]**". **[badQualBases]** is an interger value which specifies how many bases need to have quality scores below the threshold, set by **[qualThreshold]**, within the window (**[qualSlidingWindow]**) before the sequence is trimmed. This process is conducted by ShortRead::trimTailw().
+
 ## Arguments
 **[seqFile]** Sequence file to trim, either fasta or fastq (gzip compression tolerated).
 
@@ -81,6 +84,14 @@ Additionally, if random or ambiguous nucleotide sequences are to be used in matc
 **[--ignoreAmbiguousNts]**  Conversely, ambiguous nucleotides can be ignored from collection but still enforced in matching for trimming.
 
 **[--noFiltering]** Will not filter reads based on leadTrimSeq, the default behavior.
+
+**[--noQualTrimming]** Will not quality trim reads, the default behavior.
+
+**[--badQualBases]** Number of bases below threshold in sliding window before read is trimmed. Default = 5.
+
+**[--qualSlidingWindow]** Slinding window size for which to assess quality scores below threshold. Default = 10.
+
+**[--qualThreshold]** Quality threshold for trimming, minimum allowable score. Default = '?', Q30.
 
 **[--compress]** Output fastq/fasta files are gzipped.
 

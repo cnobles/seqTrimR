@@ -170,7 +170,7 @@ seqs <- ShortRead::sread(seqPointer)
 names(seqs) <- ShortRead::id(seqPointer)
 
 # Trim sequences, either on a single core or multiple cores
-if(args$cores == 0){
+if(args$cores <= 1){
   # Trim 5' end or leading end. Conditionals present for added features.
   if(nchar(args$leadTrimSeq) > 0){
     trimmedSeqs <- trim_leading(

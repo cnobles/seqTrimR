@@ -72,7 +72,9 @@ Additionally, if random or ambiguous nucleotide sequences are to be used in matc
 
 **[--overMisMatch]** Maximum allowable mismatches in overreading trim sequence. Default = 0.
 
-**[--overMaxLength]** Maximum length to consider of the overTrimSeq to use for alignments. See above for in-depth explanation of this feature.
+**[--overMaxLength]** Maximum length to consider of the overTrimSeq to use for alignments. See above for in-depth explanation of this feature. Default 20 nts.
+
+**[--overMinLength]** Minimum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 3 nts.
 
 **[--minSeqLength]** Minimum length of trimmed sequence. Any trimmed sequence with a length below this value will be filtered out. Default = 30.
 

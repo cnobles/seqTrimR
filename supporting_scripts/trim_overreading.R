@@ -2,7 +2,7 @@
 #' synthetic sequence
 #' \code{trim_overreading} removes 3' ends of nucleotide sequences completely or
 #' partially matching the trimSequence.
-#' @param seqs DNAStringSet of reads or unique sequences
+#' @param seqs ShortReadQ object of reads or unique sequences
 #' @param trimSequence character string of lenth 1, such as "GAAAATC". This
 #' string will be used to match the end of sequences, upon which the matching
 #' portion will be trimmed from the start of the match to the end of the
@@ -19,57 +19,46 @@
 #' @author Christopher Nobles, Ph.D.
 
 trim_overreading <- function(seqs, trimSequence,
-                             percentID, maxSeqLength = NULL){
-  require(IRanges)
-  require(GenomicRanges)
+                             percentID, maxSeqLength = NULL, 
+                             minSeqLength = 3){
+  require(BiocGenerics)
   require(Biostrings)
+  stopifnot(class(seqs) %in% "ShortReadQ")
+  stopifnot(!is.null(id(seqs)))
   
-  if(is.null(names(seqs))){
-    noNames <- TRUE
-    names(seqs) <- as.character(1:length(seqs))
-  }else{
-    noNames <- FALSE
-  }
-  
+  # Trim down trimSequence if maxSeqLength provided
   if(!is.null(maxSeqLength)){
     trimSequence <- Biostrings::DNAStringSet(
       trimSequence, start = 1L, end = min(nchar(trimSequence), maxSeqLength))
   }
   
-  trimSeqs <- sapply(0:(nchar(trimSequence)-1), function(i){
+  trimSeqs <- sapply(0:(nchar(trimSequence)-minSeqLength), function(i){
     substr(trimSequence, 1, nchar(trimSequence) - i)
   })
   
-  alignments <- do.call(
-    rbind,
-    lapply(trimSeqs, function(trimSeq, seqs, percentID){
-      mismatch <- round( nchar(trimSeq) - percentID*nchar(trimSeq) )
+  alignments <- do.call(c, lapply(trimSeqs, function(trimSeq, seqs, percentID){
+      mismatch <- round(nchar(trimSeq) - percentID*nchar(trimSeq))
       vmp <- Biostrings::vmatchPattern(
-        trimSeq, seqs, max.mismatch = mismatch, fixed = FALSE)
-      IRanges::as.data.frame(unlist(vmp))
+        trimSeq, sread(seqs), max.mismatch = mismatch, fixed = FALSE)
+      idx <- which(lengths(vmp) >= 1)
+      idx <- Rle(values = idx, lengths = lengths(vmp[idx]))
+      ir <- unlist(vmp)
+      names(ir) <- idx
+      ir
     }, seqs = seqs, percentID = percentID))
   
-  alignments$seqLength <- width(seqs)[
-    match(alignments$names, names(seqs))]
+  seqWidths <- width(seqs[as.numeric(names(alignments))])
   alignments <- alignments[
-    alignments$width == nchar(trimSequence) |
-      alignments$end == alignments$seqLength,]
+    width(alignments) == nchar(trimSequence) | end(alignments) == seqWidths]
+  alignments <- split(alignments, names(alignments))
+  alignments <- unlist(reduce(alignments, min.gapwidth = 1000000))
+  alignments <- alignments[order(as.numeric(names(alignments)))]
+  idx <- as.numeric(names(alignments))
   
-  alnRanges <- GenomicRanges::reduce(GenomicRanges::GRanges(
-    seqnames = alignments$names,
-    ranges = IRanges::IRanges(
-      start = alignments$start,
-      end = alignments$seqLength),
-    strand = rep("*", nrow(alignments))),
-    ignore.strand = TRUE)
+  if(any(table(idx) > 1)){
+    stop("Issues with overread trimming, please adjust input parameters.")}
   
-  trimmedSeqs <- Biostrings::DNAStringSet(
-    seqs[GenomicRanges::seqnames(alnRanges)],
-    start = 1L,
-    end = GenomicRanges::start(alnRanges)-1)
-  
-  allSeqs <- c(trimmedSeqs, seqs[!names(seqs) %in% names(trimmedSeqs)])
-  allSeqs <- allSeqs[names(seqs)]
-  if(noNames) names(allSeqs) <- NULL
-  return(allSeqs)
+  # Trim sequences
+  seqs[idx] <- narrow(seqs[idx], end = start(alignments)-1)
+  return(seqs)
 }

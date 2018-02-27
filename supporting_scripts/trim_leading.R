@@ -1,6 +1,6 @@
 #' Trim beginning or leading ends of nucleotide sequences
 #'
-#' @param seqs DNAStringSet of reads or unique sequences
+#' @param seqs ShortReadQ object of reads or unique sequences
 #' @param trimSequence character string of lenth 1, such as "GAAAATC". This
 #' string will be used to match to the beginning of sequences, upon which
 #' non-matching sequences will be discarded and the matching portion will be
@@ -33,10 +33,16 @@
 trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
                          collectRandomID = FALSE, ignoreAmbiguousNts = FALSE,
                          noFiltering = FALSE){
+  # Checks and requirements
   require(BiocGenerics)
   require(Biostrings)
-  stopifnot(class(seqs) %in% "DNAStringSet")
-  stopifnot(!is.null(names(seqs)))
+  stopifnot(class(seqs) %in% "ShortReadQ")
+  stopifnot(!is.null(id(seqs)))
+  
+  # Change scientific notation switch to inhibit indexing errors
+  ori.scipen <- getOption("scipen")
+  options(scipen = 99)
+  
   if(ignoreAmbiguousNts & collectRandomID){
     message("\nCurrently this function cannot collect random IDs
             if it ignores ambiguous nucleotides.
@@ -50,9 +56,7 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
   }
   
   # Phasing will ignore the first number of nucleotides of the sequence
-  seqs <- Biostrings::DNAStringSet(
-    seqs,
-    start = 1L + phasing)
+  seqs <- narrow(seqs, start = 1L + phasing)
   
   # Determine the structure of random sequences within the trimSequence
   if(!ignoreAmbiguousNts){
@@ -83,59 +87,70 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
   seqs <- seqs[width(seqs) >= nchar(trimSequence)+2]
   
   # Serially align the segment(s) from trimSequence to seqs
-  aln <- do.call(c, lapply(1:length(tSegRanges), function(i, tSegRanges, seqs){
-    tSeq <- names(tSegRanges[i])
-    misMatch <- tSegRanges@metadata$misMatch[i]
-    alnSeqs <- DNAStringSet(
-      seqs,
-      start = ifelse(start(tSegRanges[i]) == 1L, 1, start(tSegRanges[i]) - 1),
-      end = end(tSegRanges[i]) + 1)
-    aln <- unlist(vmatchPattern(
-      tSeq, alnSeqs, max.mismatch = misMatch, fixed = FALSE))
-    shift(
-      aln,
-      shift = ifelse(
-        start(tSegRanges[i]) == 1L, 0L, start(tSegRanges[i]) - 2))
-  },
-  tSegRanges = tSegRanges,
-  seqs = seqs))
-  
-  # Identify and select only sequences that have all required alignments
-  seqCount <- table(names(aln))
-  if(any(seqCount > length(trimSegments))){
-    stop("\nAlignment too permissive. Ambiguous mapping of sequences.
-         Please adjust maxMisMatch criteria.")
-  }
-  matchedSeqs <- seqs[names(seqCount[seqCount == length(tSegRanges)])]
-  aln <- aln[names(aln) %in% names(seqCount[seqCount == length(tSegRanges)])]
-  matchedRanges <- split(aln, names(aln))
-  trimRanges <- unlist(reduce(matchedRanges, min.gapwidth = nchar(trimSequence)))
-  
-  # Trim sequences with the trimSequence alignment position(s)
-  trimmedSeqs <- DNAStringSet(
-    matchedSeqs[names(trimRanges)],
-    start = end(trimRanges) + 1)
-  
+  aln <- lapply(1:length(tSegRanges), function(i, tSegRanges, seqs){
+      tSeq <- names(tSegRanges[i])
+      misMatch <- tSegRanges@metadata$misMatch[i]
+      alnSeqs <- narrow(
+        seqs,
+        start = ifelse(start(tSegRanges[i]) == 1L, 1, start(tSegRanges[i]) - 1),
+        end = end(tSegRanges[i]) + 1)
+      aln <- vmatchPattern(
+        tSeq, sread(alnSeqs), max.mismatch = misMatch, fixed = FALSE)
+    
+      if(any(lengths(aln) > 1)){
+        stop("\nAlignment too permissive. Ambiguous mapping of sequences.
+           Please adjust maxMisMatch criteria.")}
+      idx <- lengths(aln) == 1 
+      return(list("match" = aln, "idx" = idx))
+    },
+    tSegRanges = tSegRanges,
+    seqs = seqs)
+
+  # Identify and trim only sequences that have all required alignments
+  matchedIndex <- table(unlist(lapply(lapply(aln, "[[", "idx"), which)))
+  matchedIndex <- as.numeric(names(matchedIndex)[
+    matchedIndex == length(tSegRanges)])
+  matchedSeqs <- seqs[matchedIndex]
+  tShift <- ifelse(length(tSegRanges) > 1, 2, 1)
+  matchedStarts <- start(tail(tSegRanges, n = 1)) - tShift + 
+    unlist(endIndex(aln[[length(aln)]]$match)) + 1
+  trimmedSeqs <- narrow(matchedSeqs, start = matchedStarts)
+
   if(noFiltering){
-    trimmedSeqs <- c(trimmedSeqs, seqs[!names(seqs) %in% names(trimmedSeqs)])
-    trimmedSeqs <- trimmedSeqs[names(seqs)]
+    unmatchedIndex <- which(!1:length(seqs) %in% matchedIndex)
+    untrimmedSeqs <- seqs[unmatchedIndex]
+    trimmedSeqs <- append(trimmedSeqs, untrimmedSeqs)
+    trimmedSeqs <- trimmedSeqs[order(c(matchedIndex, unmatchedIndex))]
   }
   
   if(!collectRandomID | !grepl("N", trimSequence)){
+    # Return scipen option to original value
+    options(scipen = ori.scipen)
+    
     return(trimmedSeqs)
   }else{
-    gapRanges <- gaps(matchedRanges)
-    randomSeqs <- lapply(
-      1:(length(trimSegments) - 1), function(i, gapRanges, matchedSeqs){
-        starts <- sapply(1:length(gapRanges), function(j) start(gapRanges[[j]][i]))
-        ends <- sapply(1:length(gapRanges), function(j) end(gapRanges[[j]][i]))
-        DNAStringSet(
-          matchedSeqs[names(gapRanges)],
-          start = starts,
-          end = ends)
-      },
-      gapRanges = gapRanges,
-      matchedSeqs = matchedSeqs)
+    randomSets <- lapply(1:(length(aln)-1), function(k, aln, matchedIndex){
+      gapRanges <- do.call(c, lapply(k:(k+1), function(i){
+        matched <- aln[[i]]$match
+        idx <- which(lengths(matched) == 1)
+        tRanges <- unlist(matched)
+        names(tRanges) <- idx
+        tShift <- ifelse(i > 1, start(tSegRanges[i]) - 1, start(tSegRanges[i]))
+        shift(tRanges, shift = tShift - 1)
+      }))
+      gapRanges <- gapRanges[names(gapRanges) %in% matchedIndex]
+      gapRanges <- split(gapRanges, names(gapRanges))
+      gapRanges <- unlist(gaps(gapRanges))
+      gapRanges[as.character(matchedIndex)]
+    }, aln = aln, matchedIndex = matchedIndex)
+    
+    randomSeqs <- lapply(randomSets, function(ir, matchedIndex, seqs){
+      narrow(seqs[matchedIndex], start = start(ir), end = end(ir))
+    }, matchedIndex = matchedIndex, seqs = seqs)
+    
+    # Return scipen option to original value
+    options(scipen = ori.scipen)
+    
     return(list(
       "trimmedSequences" = trimmedSeqs,
       "randomSequences" = randomSeqs))

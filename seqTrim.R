@@ -193,8 +193,7 @@ if(seqType == "fasta"){
 
 # Log info
 input_tbl <- log_seq_data(seqs)
-message("\nInput sequence information:")
-pandoc.table(input_tbl)
+pandoc.table(input_tbl, caption = "Input sequence information.")
 
 # Quality trimming, trim from left to remove consecutive bad quality bases.
 ## Below block sets the OpenMP threads to the cores specified in args.
@@ -210,8 +209,9 @@ if(!args$noQualTrimming & seqType == "fastq"){
   
   # Log info
   qual_trimmed_tbl <- log_seq_data(seqs)
-  message("\nSequence information remaining after quality trimming:")
-  pandoc.table(qual_trimmed_tbl)
+  pandoc.table(
+    qual_trimmed_tbl, 
+    caption = "Sequence information remaining after quality trimming.")
 }
 
 # Trim sequences, either on a single core or multiple cores
@@ -238,8 +238,9 @@ if(args$cores <= 1){
   
   # Log info
   lead_trimmed_tbl <- log_seq_data(trimmedSeqs)
-  message("\nSequence information remaining after lead trimming:")
-  pandoc.table(lead_trimmed_tbl)
+  pandoc.table(
+    lead_trimmed_tbl, 
+    caption = "Sequence information remaining after lead trimming.")
   
   if(nchar(args$overTrimSeq) > 0){
     # Determine percent identity from allowable mismatch.
@@ -256,8 +257,9 @@ if(args$cores <= 1){
     
     # Log info
     over_trimmed_tbl <- log_seq_data(trimmedSeqs)
-    message("\nSequence information remaining after overreading trimming:")
-    pandoc.table(over_trimmed_tbl)
+    pandoc.table(
+      over_trimmed_tbl, 
+      caption = "Sequence information remaining after overreading trimming.")
   }
 }else{
   # Split sequences up evenly across cores for trimming
@@ -300,8 +302,9 @@ if(args$cores <= 1){
   
   # Log info
   lead_trimmed_tbl <- log_seq_data(trimmedSeqs)
-  message("\nSequence information remaining after lead trimming:")
-  pandoc.table(lead_trimmed_tbl)
+  pandoc.table(
+    lead_trimmed_tbl,
+    caption = "Sequence information remaining after lead trimming.")
   
   # The method for overread trimming sequentially aligns shorter fragments of 
   # the overTrimSeq, and solely requiring mismatches could lead to some issues.
@@ -329,8 +332,9 @@ if(args$cores <= 1){
     
     # Log info
     over_trimmed_tbl <- log_seq_data(trimmedSeqs)
-    message("\nSequence information remaining after overreading trimming:")
-    pandoc.table(over_trimmed_tbl)
+    pandoc.table(
+      over_trimmed_tbl, 
+      caption = "Sequence information remaining after overreading trimming.")
   }
   # Stop buster before he gets out of control.
   stopCluster(buster)
@@ -341,9 +345,9 @@ trimmedSeqs <- trimmedSeqs[width(trimmedSeqs) >= args$minSeqLength]
 
 # Log info
 len_trimmed_tbl <- log_seq_data(trimmedSeqs)
-message("\nSequence information remaining after minimum length trimming:")
-pandoc.table(len_trimmed_tbl)
-
+pandoc.table(
+  len_trimmed_tbl, 
+  caption = "Sequence information remaining after minimum length trimming.")
 
 # Collect RandomIDs if requested
 if(all(args$collectRandomIDs != FALSE)){
@@ -391,5 +395,5 @@ if(all(args$collectRandomIDs != FALSE)){
     )
 }}
 
-# Completed
+cat("Script completed.\n")
 q()

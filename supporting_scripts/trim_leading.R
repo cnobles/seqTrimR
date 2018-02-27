@@ -34,9 +34,9 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
                          collectRandomID = FALSE, ignoreAmbiguousNts = FALSE,
                          noFiltering = FALSE){
   # Checks and requirements
-  require(BiocGenerics)
-  require(Biostrings)
-  stopifnot(class(seqs) %in% "ShortReadQ")
+  suppressMessages(require(BiocGenerics))
+  suppressMessages(require(Biostrings))
+  stopifnot(class(seqs) %in% c("ShortReadQ", "ShortRead"))
   stopifnot(!is.null(ShortRead::id(seqs)))
   
   # Change scientific notation switch to inhibit indexing errors

@@ -21,9 +21,9 @@
 trim_overreading <- function(seqs, trimSequence,
                              percentID, maxSeqLength = NULL, 
                              minSeqLength = 3){
-  require(BiocGenerics)
-  require(Biostrings)
-  stopifnot(class(seqs) %in% "ShortReadQ")
+  suppressMessages(require(BiocGenerics))
+  suppressMessages(require(Biostrings))
+  stopifnot(class(seqs) %in% c("ShortReadQ", "ShortRead"))
   stopifnot(!is.null(ShortRead::id(seqs)))
   
   # Trim down trimSequence if maxSeqLength provided

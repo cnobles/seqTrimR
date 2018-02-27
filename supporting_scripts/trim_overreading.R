@@ -24,7 +24,7 @@ trim_overreading <- function(seqs, trimSequence,
   require(BiocGenerics)
   require(Biostrings)
   stopifnot(class(seqs) %in% "ShortReadQ")
-  stopifnot(!is.null(id(seqs)))
+  stopifnot(!is.null(ShortRead::id(seqs)))
   
   # Trim down trimSequence if maxSeqLength provided
   if(!is.null(maxSeqLength)){
@@ -39,7 +39,7 @@ trim_overreading <- function(seqs, trimSequence,
   alignments <- do.call(c, lapply(trimSeqs, function(trimSeq, seqs, percentID){
       mismatch <- round(nchar(trimSeq) - percentID*nchar(trimSeq))
       vmp <- Biostrings::vmatchPattern(
-        trimSeq, sread(seqs), max.mismatch = mismatch, fixed = FALSE)
+        trimSeq, ShortRead::sread(seqs), max.mismatch = mismatch, fixed = FALSE)
       idx <- which(lengths(vmp) >= 1)
       idx <- Rle(values = idx, lengths = lengths(vmp[idx]))
       ir <- unlist(vmp)

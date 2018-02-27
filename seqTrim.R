@@ -34,8 +34,11 @@ parser$add_argument(
   "--overMisMatch", nargs = 1, type = "integer", default = 0,
   help = "Maximum allowable mismatches in overreading trim sequence. Default = 0.")
 parser$add_argument(
-  "--overMaxLength", nargs = 1, type = "integer", default = 0,
-  help = "Maximum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature.")
+  "--overMaxLength", nargs = 1, type = "integer", default = 20,
+  help = "Maximum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 20 nts.")
+parser$add_argument(
+  "--overMinLength", nargs = 1, type = "integer", default = 3,
+  help = "Minimum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 3 nts.")
 parser$add_argument(
   "--minSeqLength", nargs = 1, type = "integer", default = 30,
   help = "Minimum length of trimmed sequence. Any trimmed sequence with a length below this value will be filtered out. Default = 30")
@@ -53,13 +56,13 @@ parser$add_argument(
   help = "Will not quality trim reads, the default behavior.")
 parser$add_argument(
   "--badQualBases", nargs = 1, type = "integer", default = 5,
-  help = "Number of bases below threshold in sliding window before read is trimmed. Default = 5")
+  help = "Number of bases below threshold in sliding window before read is trimmed. Default = 5.")
 parser$add_argument(
   "--qualSlidingWindow", nargs = 1, type = "integer", default = 10,
-  help = "Slinding window size for which to assess quality scores below threshold. Default = 10")
+  help = "Slinding window size for which to assess quality scores below threshold. Default = 10.")
 parser$add_argument(
   "--qualThreshold", nargs = 1, type = "character", default = '?',
-  help = "Quality threshold for trimming, minimum allowable score. Default = '?', Q30")
+  help = "Quality threshold for trimming, minimum allowable score. Default = '?', Q30.")
 parser$add_argument(
   "--compress", action = "store_true", help = "Output fastq files are gzipped.")
 parser$add_argument(
@@ -81,7 +84,7 @@ if(args$overMaxLength == 0){
   args$overMaxLength <- nchar(args$overTrimSeq)
 }
 
-if(!args$collectRandomIDs == FALSE){
+if(all(args$collectRandomIDs != FALSE)){
   if(!grepl("N", args$leadTrimSeq)){
     message("No random nucleotides (Ns) found in leadTrimSeq. Turning off collection of randomIDs.")
     args$collectRandomIDs <- FALSE
@@ -107,10 +110,10 @@ input_table <- data.frame(
 input_table <- input_table[
   match(c("seqFile :", "output :", "leadTrimSeq :", "overTrimSeq :", 
           "phasing :", "maxMisMatch :", "leadMisMatch :", "overMisMatch :", 
-          "overMaxLength :", "minSeqLength :", "collectRandomIDs :", 
-          "ignoreAmbiguousNts :", "noFiltering :", "noQualTrimming :", 
-          "badQualBases :", "qualSlidingWindow :", "qualThreshold :", 
-          "compress :", "cores :"),
+          "overMaxLength :", "overMinLength :", "minSeqLength :", 
+          "collectRandomIDs :", "ignoreAmbiguousNts :", "noFiltering :", 
+          "noQualTrimming :", "badQualBases :", "qualSlidingWindow :", 
+          "qualThreshold :", "compress :", "cores :"),
         input_table$Variables),]
 pandoc.title("seqTrimR Inputs")
 pandoc.table(data.frame(input_table, row.names = NULL), 
@@ -151,10 +154,10 @@ source(file.path(
 source(file.path(
   code_dir, "supporting_scripts", "write_seq_files.R"))
 source(file.path(
-  code_dir, "supporting_scripts", "log_seq_data.R"))
+  code_dir, "supporting_scripts", "utility_funcs.R"))
 if(!all(
-  c("trim_leading", "trim_overreading", "write_seq_files", "log_seq_data") %in% 
-  ls())){
+  c("trim_leading", "trim_overreading", "write_seq_files", "log_seq_data", 
+    "serial_append_S4") %in% ls())){
     stop("Cannot load supporting scripts. You may need to clone from github again.")
 }
 
@@ -173,9 +176,9 @@ if(!outType %in% c("fa", "fasta", "fastq")){
 outType <- ifelse(outType %in% c("fa", "fasta"), "fasta", "fastq")
 
 # Determine random output file type
-if(!args$collectRandomIDs == FALSE){
+if(all(args$collectRandomIDs != FALSE)){
   randomType <- str_extract(args$collectRandomIDs, "fa[\\w]*")
-  if(!randomType %in% c("fa", "fasta", "fastq")){
+  if(all(!randomType %in% c("fa", "fasta", "fastq"))){
     stop("Unrecognized randomID output file type, please choose '*.fasta' or '*.fastq'.")
   }
   randomType <- ifelse(randomType %in% c("fa", "fasta"), "fasta", "fastq")
@@ -220,7 +223,7 @@ if(args$cores <= 1){
       trimSequence = args$leadTrimSeq,
       phasing = args$phasing,
       maxMisMatch = args$leadMisMatch,
-      collectRandomID = !args$collectRandomIDs == FALSE,
+      collectRandomID = all(args$collectRandomIDs != FALSE),
       ignoreAmbiguousNts = args$ignoreAmbiguousNts,
       noFiltering = args$noFiltering)
   }else{
@@ -228,7 +231,7 @@ if(args$cores <= 1){
   }
   
   # Collect random sequences if desired.
-  if(args$collectRandomIDs != FALSE){
+  if(all(args$collectRandomIDs != FALSE)){
     randomSeqs <- trimmedSeqs$randomSequences
     trimmedSeqs <- trimmedSeqs$trimmedSequences
   }
@@ -248,7 +251,8 @@ if(args$cores <= 1){
       trimmedSeqs, 
       trimSequence = args$overTrimSeq, 
       percentID = percentID, 
-      maxSeqLength = args$overMaxLength)
+      maxSeqLength = args$overMaxLength,
+      minSeqLength = args$overMinLength)
     
     # Log info
     over_trimmed_tbl <- log_seq_data(trimmedSeqs)
@@ -272,46 +276,42 @@ if(args$cores <= 1){
       trimSequence = args$leadTrimSeq,
       phasing = args$phasing,
       maxMisMatch = args$leadMisMatch,
-      collectRandomID = !args$collectRandomIDs == FALSE,
+      collectRandomID = all(args$collectRandomIDs != FALSE),
       ignoreAmbiguousNts = args$ignoreAmbiguousNts,
       noFiltering = args$noFiltering
     )
   
-    if(args$collectRandomIDs != FALSE){
-      randomSeqs <- lapply(
-        trimmedSeqs, "[[", "randomSequences")
+    if(all(args$collectRandomIDs != FALSE)){
+      randomSeqs <- lapply(trimmedSeqs, "[[", "randomSequences")
       randomSeqs <- lapply(1:length(randomSeqs[[1]]), function(i){
-        unlist(DNAStringSetList(lapply(
-          1:length(randomSeqs), function(j) randomSeqs[[j]][[i]])))
+        serial_append_S4(
+          lapply(1:length(randomSeqs), function(j){
+            randomSeqs[[j]][[i]]
+        }))
       })
-      #names(randomSeqs) <- gsub("^[0-9]+\\.", "", names(randomSeqs))
-      trimmedSeqs <- unlist(DNAStringSetList(lapply(
-        1:length(trimmedSeqs), function(i) trimmedSeqs[[i]]$trimmedSequences)))
-      trimmedSeqs <- split(
-        trimmedSeqs, 
-        ceiling(seq_along(trimmedSeqs) / (length(trimmedSeqs)/args$cores)))
-    }else{
-      trimmedSeqs <- unlist(DNAStringSetList(trimmedSeqs))
-      names(trimmedSeqs) <- gsub("^[0-9]+\\.", "", names(trimmedSeqs))
-      trimmedSeqs <- split(
-        trimmedSeqs, 
-        ceiling(seq_along(trimmedSeqs) / (length(trimmedSeqs)/args$cores)))
+
+      trimmedSeqs <- lapply(trimmedSeqs, "[[", "trimmedSequences")
     }
   }else{
     trimmedSeqs <- split.seqs
   }
+
+  trimmedSeqs <- serial_append_S4(trimmedSeqs)
   
   # Log info
   lead_trimmed_tbl <- log_seq_data(trimmedSeqs)
   message("\nSequence information remaining after lead trimming:")
   pandoc.table(lead_trimmed_tbl)
   
-  
   # The method for overread trimming sequentially aligns shorter fragments of 
   # the overTrimSeq, and solely requiring mismatches could lead to some issues.
   # Therefore the same percent identity is requried across all alignments, 
   # however long.
   if(nchar(args$overTrimSeq) > 0){  
+    trimmedSeqs <- split(
+      trimmedSeqs, 
+      ceiling(seq_along(trimmedSeqs)/(length(trimmedSeqs)/args$cores)))
+    
     percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
       nchar(args$overTrimSeq)
   
@@ -322,14 +322,15 @@ if(args$cores <= 1){
       trim_overreading,
       trimSequence = args$overTrimSeq, 
       percentID = percentID, 
-      maxSeqLength = args$overMaxLength)
-    #names(trimmedSeqs) <- gsub("^[0-9]+\\.", "", names(trimmedSeqs))
+      maxSeqLength = args$overMaxLength,
+      minSeqLength = args$overMinLength)
+
+    trimmedSeqs <- serial_append_S4(trimmedSeqs)
     
     # Log info
     over_trimmed_tbl <- log_seq_data(trimmedSeqs)
     message("\nSequence information remaining after overreading trimming:")
     pandoc.table(over_trimmed_tbl)
-    
   }
   # Stop buster before he gets out of control.
   stopCluster(buster)
@@ -345,10 +346,10 @@ pandoc.table(len_trimmed_tbl)
 
 
 # Collect RandomIDs if requested
-if(!args$collectRandomIDs == FALSE){
+if(all(args$collectRandomIDs != FALSE)){
   randomSeqs <- lapply(1:length(randomSeqs), function(i, ids){
-    randomSeqs[[i]][which(as.character(id(randomSeqs[[i]])) %in% ids)]
-  }, ids = as.character(id(trimmedSeqs)))
+    randomSeqs[[i]][which(as.character(ShortRead::id(randomSeqs[[i]])) %in% ids)]
+  }, ids = as.character(ShortRead::id(trimmedSeqs)))
 }
 
 # Sequences have been trimmed and random sequnces collected (if desired). 
@@ -365,7 +366,7 @@ write_seq_files(
   compress = args$compress)
 
 # Write randomID file.
-if(!args$collectRandomIDs == FALSE){
+if(all(args$collectRandomIDs != FALSE)){
   if(length(randomSeqs) == 1){
     write_seq_files(
       seqs = randomSeqs[[1]],

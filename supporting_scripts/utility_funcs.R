@@ -29,3 +29,22 @@ log_seq_data <- function(seqs){
     return(tbl)
   }
 }
+
+#' Combine a list of ShortRead objects
+#' 
+#' @param split.seqs list of ShortRead objects
+#' @author Christopher Nobles, Ph.D.
+serial_append_S4 <- function(split.seqs){
+  require("BiocGenerics")
+  require("ShortRead")
+  stopifnot(class(split.seqs) == "list")
+  
+  app_env <- new.env()
+  app_env$seqs <- split.seqs[[1]]
+  
+  null <- lapply(2:(length(split.seqs)), function(i){
+    app_env$seqs <- append(app_env$seqs, split.seqs[[i]])
+  })
+  
+  return(app_env$seqs)
+} 

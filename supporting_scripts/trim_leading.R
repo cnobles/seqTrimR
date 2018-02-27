@@ -37,13 +37,13 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
   require(BiocGenerics)
   require(Biostrings)
   stopifnot(class(seqs) %in% "ShortReadQ")
-  stopifnot(!is.null(id(seqs)))
+  stopifnot(!is.null(ShortRead::id(seqs)))
   
   # Change scientific notation switch to inhibit indexing errors
   ori.scipen <- getOption("scipen")
   options(scipen = 99)
   
-  if(ignoreAmbiguousNts & collectRandomID){
+  if(ignoreAmbiguousNts & all(collectRandomID != FALSE)){
     message("\nCurrently this function cannot collect random IDs
             if it ignores ambiguous nucleotides.
             Switching collectRandomID to FALSE.")
@@ -95,7 +95,7 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
         start = ifelse(start(tSegRanges[i]) == 1L, 1, start(tSegRanges[i]) - 1),
         end = end(tSegRanges[i]) + 1)
       aln <- vmatchPattern(
-        tSeq, sread(alnSeqs), max.mismatch = misMatch, fixed = FALSE)
+        tSeq, ShortRead::sread(alnSeqs), max.mismatch = misMatch, fixed = FALSE)
     
       if(any(lengths(aln) > 1)){
         stop("\nAlignment too permissive. Ambiguous mapping of sequences.
@@ -123,7 +123,7 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
     trimmedSeqs <- trimmedSeqs[order(c(matchedIndex, unmatchedIndex))]
   }
   
-  if(!collectRandomID | !grepl("N", trimSequence)){
+  if(!all(collectRandomID != FALSE) | !grepl("N", trimSequence)){
     # Return scipen option to original value
     options(scipen = ori.scipen)
     

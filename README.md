@@ -75,7 +75,9 @@ By default, seqTrimR will quality trim from the left to right in the reads provi
 
 **[--overMisMatch]** Maximum allowable mismatches in overreading trim sequence. Default = 0.
 
-**[--overMaxLength]** Maximum length to consider of the overTrimSeq to use for alignments. See above for in-depth explanation of this feature.
+**[--overMaxLength]** Maximum length to consider of the overTrimSeq to use for alignments. See above for in-depth explanation of this feature. Default 20 nts.
+
+**[--overMinLength]** Minimum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 3 nts.
 
 **[--minSeqLength]** Minimum length of trimmed sequence. Any trimmed sequence with a length below this value will be filtered out. Default = 30.
 

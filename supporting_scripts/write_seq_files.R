@@ -13,7 +13,7 @@
 #' written or leave it uncompressed. Default is FALSE, or uncompressed.
 #' @author Christopher Nobles, Ph.D.
 
-write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
+write_seq_files <- function(seqs, seqType, file, compress = FALSE){
   packs <- c("Biostrings", "ShortRead")
   packsLoaded <- suppressMessages(sapply(packs, require, character.only = TRUE))
   stopifnot(all(packsLoaded))
@@ -21,48 +21,23 @@ write_seq_files <- function(pointer, seqs, seqType, file, compress = FALSE){
   if(seqType == "fasta"){
     if(compress){
       if(grepl(".gz$", file)){
-        writeXStringSet(
-          seqs, filepath = file, compress = TRUE, format = "fasta")    
+        ShortRead::writeFasta(seqs, file = file, compress = TRUE)    
       }else{
-        writeXStringSet(
-          seqs, filepath = paste0(file, ".gz"), compress = TRUE, format = "fasta")
+        ShortRead::writeFasta(seqs, file = paste0(file, ".gz"), compress = TRUE)
       }
     }else{
-      writeXStringSet(
-        seqs, filepath = file, compress = FALSE, format = "fasta")
+      ShortRead::writeFasta(seqs, file = file, compress = FALSE)
     }
   }else{
-    # Load read names and identify in object the original starts
-    quals <- Biostrings::quality(pointer)
-    oriWidth <- quals@quality@ranges@width
-    oriStarts <- quals@quality@ranges@start
-
-    seqNames <- as.character(ShortRead::id(pointer))
-    names(quals@quality) <- seqNames
-    includedNames <- seqNames %in% names(seqs)
-    seqs <- seqs[seqNames[includedNames]]
-    quals@quality <- quals@quality[seqNames[includedNames]]
-    
-    # Transfer trimming to quality ranges
-    quals@quality <- narrow(
-      quals@quality,
-      start = seqs@ranges@start - oriStarts[includedNames] + 1,
-      width = seqs@ranges@width)
-    
     if(compress){
       if(grepl(".gz$", file)){
-        writeXStringSet(
-          seqs, filepath = file, compress = TRUE, 
-          format = "fastq", qualities = quals@quality)
+        ShortRead::writeFastq(seqs, file = file, compress = TRUE)
       }else{    
-        writeXStringSet(
-          seqs, filepath = paste0(file, ".gz"), compress = TRUE, 
-          format = "fastq", qualities = quals@quality)
+        ShortRead::writeFastq(seqs, file = paste0(file, ".gz"), compress = TRUE)
       }
     }else{
-      writeXStringSet(
-        seqs, filepath = file, compress = FALSE, 
-        format = "fastq", qualities = quals@quality)
+      ShortRead::writeFasta(
+        seqs, filepath = file, compress = FALSE)
     }
   }
 }

@@ -195,6 +195,16 @@ if(seqType == "fasta"){
 input_tbl <- log_seq_data(seqs)
 pandoc.table(input_tbl, caption = "Input sequence information.")
 
+# If no reads remaining, terminate and write output
+if(length(seqs) == 0){
+  message(
+    "No reads remaining to trim. Terminating script after writing output.")
+  write_seq_files(
+    seqs = seqs, seqType = outType, file = args$output,
+    compress = args$compress)
+  q()
+}
+
 # Quality trimming, trim from left to remove consecutive bad quality bases.
 ## Below block sets the OpenMP threads to the cores specified in args.
 if(!args$noQualTrimming & seqType == "fastq"){
@@ -212,6 +222,16 @@ if(!args$noQualTrimming & seqType == "fastq"){
   pandoc.table(
     qual_trimmed_tbl, 
     caption = "Sequence information remaining after quality trimming.")
+}
+
+# If no reads remaining, terminate and write output
+if(length(seqs) == 0){
+  message(
+    "No reads remaining to trim. Terminating script after writing output.")
+  write_seq_files(
+    seqs = seqs, seqType = outType, file = args$output,
+    compress = args$compress)
+  q()
 }
 
 # Trim sequences, either on a single core or multiple cores
@@ -338,6 +358,16 @@ if(args$cores <= 1){
   }
   # Stop buster before he gets out of control.
   stopCluster(buster)
+}
+
+# If no reads remaining, terminate and write output
+if(length(seqs) == 0){
+  message(
+    "No reads remaining to trim. Terminating script after writing output.")
+  write_seq_files(
+    seqs = trimmedSeqs, seqType = outType, file = args$output,
+    compress = args$compress)
+  q()
 }
 
 # Filter sequences by minimum length.

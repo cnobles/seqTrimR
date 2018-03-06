@@ -27,4 +27,4 @@ zcat tests/testSeq-1.R1.trim.fastq.gz | sed -n '2~4p' | head -n 5
 rm -f tests/*.trim.fastq*
 
 echo "Passed all tests."
-#exit
+exit

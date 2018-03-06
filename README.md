@@ -1,4 +1,6 @@
 # seqTrimR
+[![Build Status](https://travis-ci.org/cnobles/seqTrimR.svg?branch=master)](https://travis-ci.org/cnobles/seqTrimR)
+
 Trims 5' and 3' nucleotide sequences from paired-end reads based on designated sequences and/or quality scores.
 --------------------------------------------------------------------------------
 Trimming diagram:
@@ -105,8 +107,4 @@ seqTrimR is coded in R, and was developed on v3.2.2, though it should run with e
   * pander
   * stringr
   * ShortRead
-  * Biostrings
-  * BiocGenerics
-  * IRanges
-  * GenomicRanges
   * parallel (if multicore processing is desired)

@@ -122,11 +122,9 @@ pandoc.table(data.frame(input_table, row.names = NULL),
 
 # Load additional R-packages
 if(args$cores > 1){
-  addPacks <- c("stringr", "ShortRead", "BiocGenerics", "parallel",
-                "IRanges", "GenomicRanges", "Biostrings")
+  addPacks <- c("stringr", "ShortRead", "parallel")
 }else{
-  addPacks <- c("stringr", "ShortRead", "BiocGenerics",
-                "IRanges", "GenomicRanges", "Biostrings")
+  addPacks <- c("stringr", "ShortRead")
 }
 
 addPacksLoaded <- suppressMessages(

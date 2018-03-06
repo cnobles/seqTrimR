@@ -1,0 +1,20 @@
+Package: seqTrimR
+Type: Package
+Title: Sequence trimming tool
+Version: 0.1.0
+Author: Christopher Nobles, Ph.D.
+Maintainer: Christopher Nobles <cnobles@pennmedicine.upenn.edu>
+Description: Tool trimming fasta or fastq sequences. 5' trimming, or leading 
+    trimming, as well as 3', or overreading, trimming can be controlled through
+    ambiguous nucleotide code (IUPAC) as well as declaring mismatches. This tool
+    can extract sequences from reads as well, denoted by serial 'N' sequences 
+    within input leading trimming sequences.
+License: GNU General Public License v3
+LazyData: TRUE
+Depends:
+    ShortRead,
+    stringr,
+    argparse,
+    pander,
+    yaml,
+    parallel

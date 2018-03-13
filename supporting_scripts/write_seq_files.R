@@ -37,7 +37,7 @@ write_seq_files <- function(seqs, seqType, file, compress = FALSE){
       }
     }else{
       ShortRead::writeFasta(
-        seqs, filepath = file, compress = FALSE)
+        seqs, file = file, compress = FALSE)
     }
   }
 }

@@ -46,9 +46,6 @@ parser$add_argument(
   "--collectRandomIDs", nargs = "+", type = "character", default = FALSE,
   help = "Option to collect random nucleotide sequences from trimmed portions. If used, provide an output file name.")
 parser$add_argument(
-  "--ignoreAmbiguousNts", action = "store_true", 
-  help = "Conversely, ambiguous nucleotides can be ignored from collection but still enforced in matching for trimming.")
-parser$add_argument(
   "--noFiltering", action = "store_true",
   help = "Will not filter reads based on leadTrimSeq, the default behavior.")
 parser$add_argument(
@@ -238,12 +235,11 @@ if(args$cores <= 1){
   if(nchar(args$leadTrimSeq) > 0){
     trimmedSeqs <- trim_leading(
       seqs,
-      trimSequence = args$leadTrimSeq,
+      trim.sequence = args$leadTrimSeq,
       phasing = args$phasing,
-      maxMisMatch = args$leadMisMatch,
-      collectRandomID = all(args$collectRandomIDs != FALSE),
-      ignoreAmbiguousNts = args$ignoreAmbiguousNts,
-      noFiltering = args$noFiltering)
+      max.mismatch = args$leadMisMatch,
+      collect.random = all(args$collectRandomIDs != FALSE),
+      filter = !args$noFiltering)
   }else{
     trimmedSeqs <- seqs
   }

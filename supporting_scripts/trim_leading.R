@@ -1,41 +1,42 @@
 #' Trim beginning or leading ends of nucleotide sequences
 #'
 #' @param seqs ShortReadQ object of reads or unique sequences
-#' @param trimSequence character string of lenth 1, such as "GAAAATC". This
+#' @param trim.sequence character string of lenth 1, such as "GAAAATC". This
 #' string will be used to match to the beginning of sequences, upon which
 #' non-matching sequences will be discarded and the matching portion will be
 #' trimmed from the leading side of the sequence. Ambiguous nucleotides within
 #' the sequence will be used to determine random sequences and can be used for
 #' alignment or collecting random nucleotide sequences embedded within the
-#' trimSequence structure.
+#' trim.sequence structure.
 #' @param phasing integer/numeric value, denoting the number of nucleotides used
 #' for phasing while sequencing. This number of nucleotides will be removed from
 #' the beginning of the sequence before any alignment.
-#' @param maxMisMatch integer/numeric value or vector. Values indicate the
-#' number of mismatches allowed within the DNA segment. Vectors must be equal in
-#' length to the number of non-ambiguous segments within the trimSequence. If no
-#' ambiguous segments are present in trimSequence or ignoreAmbiguousNts is TRUE,
-#' vectors for maxMisMatch will be summed to determine the maximum allowable
-#' mismatch over the entire string.
-#' @param collectRandomID logical should random / ambiguous protions of the
-#' trimSequence be collected? They will be returned as a listed DNAStringSet
+#' @param max.mismatch integer/numeric value or vector. Values indicate the
+#' number of mismatches allowed within the DNA segment. Integer / numeric 
+#' vectors can be used to indicate the number of allowable mismatches within 
+#' segments of non-ambiguous nucleotices. The length of input vecors must be 
+#' equal to the number of non-ambiguous segments within the trim.sequence. If 
+#' no ambiguous segments are present in trim.sequence vectors for max.mismatch 
+#' will be summed to determine the maximum allowable mismatch over the entire 
+#' string.
+#' @param collect.random logical should random / ambiguous protions of the
+#' trim.sequence be collected? They will be returned as a listed DNAStringSet
 #' under 'randomSequences' in order from left to right of appearance within
-#' trimSequence.
-#' @param ignoreAmbiguousNts logical To ignore ambiguous nucleotides within the
-#' trimSequence string. If theses nucleotides are ignored, then randomIDs cannot
-#' currently be collected. Rather, adjust maxMisMatch to obtain a suitable
-#' alignment for non-ambiguous segments.
-#' @return DNAStringSet of sequences with trimSequence removed or a listed
+#' trim.sequence.
+#' @param filter logical (default: TRUE). If TRUE, sequences not matching the 
+#' trim.sequence will be dropped or filtered from the output. If FALSE, all
+#' input sequences are returned, but matching sequences are trimmed.
+#' 
+#' @return DNAStringSet of sequences with trim.sequence removed or a listed
 #' object with the first postion being the DNAStringSet of trimmed sequences and
 #' the second being the random sequences collected during trimming.
+#' 
 #' @author Christopher Nobles, Ph.D.
+#'  
 
-trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
-                         collectRandomID = FALSE, ignoreAmbiguousNts = FALSE,
-                         noFiltering = FALSE){
+trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
+                         collect.random = FALSE, filter = TRUE){
   # Checks and requirements
-  suppressMessages(require(BiocGenerics))
-  suppressMessages(require(Biostrings))
   stopifnot(class(seqs) %in% c("ShortReadQ", "ShortRead"))
   stopifnot(!is.null(ShortRead::id(seqs)))
   
@@ -43,108 +44,136 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
   ori.scipen <- getOption("scipen")
   options(scipen = 99)
   
-  if(ignoreAmbiguousNts & all(collectRandomID != FALSE)){
-    message("\nCurrently this function cannot collect random IDs
-            if it ignores ambiguous nucleotides.
-            Switching collectRandomID to FALSE.")
-    collectRandomID <- FALSE
-  }
-  if(length(maxMisMatch) > 1 & ignoreAmbiguousNts){
-    message("\nSum of maxMisMatch is being used for maxMisMatch since
+  if(length(max.mismatch) > 1){
+    message("\nSum of max.mismatch is being used for max.mismatch since
             ignoreAmbiguousNts is being chosen.")
-    maxMisMatch <- sum(maxMisMatch)
+    max.mismatch <- sum(max.mismatch)
   }
   
   # Phasing will ignore the first number of nucleotides of the sequence
   seqs <- narrow(seqs, start = 1L + phasing)
   
-  # Determine the structure of random sequences within the trimSequence
-  if(!ignoreAmbiguousNts){
-    trimSegments <- unlist(strsplit(trimSequence, "[N]+"))
-    tSegRanges <- sapply(trimSegments, vmatchPattern, subject = trimSequence)
-    tSegRanges <- IRanges(
-      start = sapply(tSegRanges, function(x) as.integer(IRanges::start(x))),
-      end = sapply(tSegRanges, function(x) as.integer(IRanges::end(x))),
-      names = names(tSegRanges))
+  # Determine the structure of ambiguous sequences within the trim.sequence
+  ambi_present <- stringr::str_detect(trim.sequence, pattern = "[^A^T^G^C]")
+  if(ambi_present & collect.random){
+    trim_segments <- unlist(strsplit(trim.sequence, "[^A^T^G^C]+"))
+    trim_seg_ir <- sapply(trim_segments, vmatchPattern, subject = trim.sequence)
+    trim_seg_ir <- IRanges(
+      start = sapply(trim_seg_ir, function(x) as.integer(IRanges::start(x))),
+      end = sapply(trim_seg_ir, function(x) as.integer(IRanges::end(x))),
+      names = names(trim_seg_ir))
   }else{
-    trimSegments <- trimSequence
-    tSegRanges <- unlist(vmatchPattern(trimSegments, trimSequence))
-    names(tSegRanges) <- trimSegments
+    trim_segments <- trim.sequence
+    trim_seg_ir <- unlist(vmatchPattern(trim_segments, trim.sequence))
+    names(trim_seg_ir) <- trim_segments
   }
+  
   # Set allowable mismatches for each range
-  if(length(maxMisMatch) == 1 | ignoreAmbiguousNts){
-    tSegRanges@metadata$misMatch <- rep(maxMisMatch, length(tSegRanges))
-  }else if(length(maxMisMatch) == length(tSegRanges) & is.numeric(maxMisMatch)){
-    tSegRanges@metadata$misMatch <- maxMisMatch
+  if(length(max.mismatch) == 1){
+    trim_seg_ir@metadata$misMatch <- rep(max.mismatch, length(trim_seg_ir))
+  }else if(
+    length(max.mismatch) == length(trim_seg_ir) & is.numeric(max.mismatch)){
+      trim_seg_ir@metadata$misMatch <- max.mismatch
   }else{
-    stop("\nThe variable maxMisMatch needs to be either a
+    stop("\nThe variable max.mismatch needs to be either a
          single integer or integer vector of length equal
-         to fixed fragments within the trimSequence.")
+         to fixed fragments within the trim.sequence.")
   }
   
   # Remove seqs that do not have enough sequence for analysis
-  # Cutoff = length(trimSequence)
-  seqs <- seqs[width(seqs) >= nchar(trimSequence)+2]
+  # Cutoff = length(trim.sequence)
+  seqs <- seqs[width(seqs) >= nchar(trim.sequence)]
+  lead_seqs <- narrow(
+    seqs, 
+    start = 1, 
+    end = ifelse(
+      width(seqs) >= nchar(trim.sequence) + 1, 
+      rep(nchar(trim.sequence) + 1, length(seqs)), width(seqs)))
   
-  # Serially align the segment(s) from trimSequence to seqs
-  aln <- lapply(1:length(tSegRanges), function(i, tSegRanges, seqs){
-      tSeq <- names(tSegRanges[i])
-      misMatch <- tSegRanges@metadata$misMatch[i]
-      alnSeqs <- narrow(
-        seqs,
-        start = ifelse(start(tSegRanges[i]) == 1L, 1, start(tSegRanges[i]) - 1),
-        end = end(tSegRanges[i]) + 1)
-      aln <- vmatchPattern(
-        tSeq, ShortRead::sread(alnSeqs), max.mismatch = misMatch, fixed = FALSE)
+  # Align whole sequence to 5' end of sequence
+  aln <- vmatchPattern(
+    trim.sequence, ShortRead::sread(lead_seqs), 
+    max.mismatch = sum(max.mismatch), fixed = FALSE)
+  
+  matched_idx <- which(lengths(aln) == 1)
+  
+  # Serially align segment(s) from trim.sequence to seqs
+  if(length(trim_seg_ir) > 1){
+    aln_segs <- lapply(seq_along(trim_seg_ir), function(i, trim_seg_ir, seqs){
+        tSeq <- names(trim_seg_ir[i])
+        misMatch <- trim_seg_ir@metadata$misMatch[i]
+        alnSeqs <- narrow(
+          seqs,
+          start = ifelse(
+            start(trim_seg_ir[i]) == 1L, 1, start(trim_seg_ir[i]) - 1),
+          end = end(trim_seg_ir[i]) + 1)
+        aln <- vmatchPattern(
+          tSeq, ShortRead::sread(alnSeqs), 
+          max.mismatch = misMatch, fixed = FALSE)
+      
+        if(any(lengths(aln) > 1)){
+          stop("\nAlignment too permissive. Ambiguous mapping of sequences.
+             Please adjust max.mismatch criteria.")}
+        idx <- lengths(aln) == 1 
+        return(list("match" = aln, "idx" = idx))
+      },
+      trim_seg_ir = trim_seg_ir,
+      seqs = lead_seqs)
     
-      if(any(lengths(aln) > 1)){
-        stop("\nAlignment too permissive. Ambiguous mapping of sequences.
-           Please adjust maxMisMatch criteria.")}
-      idx <- lengths(aln) == 1 
-      return(list("match" = aln, "idx" = idx))
-    },
-    tSegRanges = tSegRanges,
-    seqs = seqs)
-
-  # Identify and trim only sequences that have all required alignments
-  matchedIndex <- table(unlist(lapply(lapply(aln, "[[", "idx"), which)))
-  matchedIndex <- as.numeric(names(matchedIndex)[
-    matchedIndex == length(tSegRanges)])
-  matchedSeqs <- seqs[matchedIndex]
-  tShift <- ifelse(length(tSegRanges) > 1, 2, 1)
-  matchedStarts <- start(tail(tSegRanges, n = 1)) - tShift + 
-    unlist(endIndex(aln[[length(aln)]]$match)) + 1
-  trimmedSeqs <- narrow(matchedSeqs, start = matchedStarts)
-
-  if(noFiltering){
-    unmatchedIndex <- which(!1:length(seqs) %in% matchedIndex)
-    untrimmedSeqs <- seqs[unmatchedIndex]
-    trimmedSeqs <- append(trimmedSeqs, untrimmedSeqs)
-    trimmedSeqs <- trimmedSeqs[order(c(matchedIndex, unmatchedIndex))]
+    # Identify and trim only sequences that have all required alignments
+    seg_idx <- table(unlist(lapply(lapply(aln, "[[", "idx"), which)))
+    seg_idx <- as.numeric(names(seg_idx)[seg_idx == length(trim_seg_ir)])
+    matched_idx <- matched_idx[matched_idx %in% seg_idx]
   }
   
-  if(!all(collectRandomID != FALSE) | !grepl("N", trimSequence)){
+  # Isolate sequences matching the input criteria
+  matched_seqs <- seqs[matched_idx]
+  trim_shift <- ifelse(length(trim_seg_ir) > 1, 2, 1)
+  matched_starts <- unlist(aln@ends[matched_idx]) + 1
+  trimmed_seqs <- narrow(matched_seqs, start = matched_starts)
+
+  if(!filter){
+    unmatched_idx <- which(!seq_along(seqs) %in% matched_idx)
+    untrimmed_seqs <- seqs[unmatched_idx]
+    trimmed_seqs <- append(trimmed_seqs, untrimmed_seqs)
+    trimmed_seqs <- trimmed_seqs[order(c(matched_idx, unmatched_idx))]
+  }
+  
+  if(!collect.random | !ambi_present){
     # Return scipen option to original value
     options(scipen = ori.scipen)
-    
-    return(trimmedSeqs)
+    return(trimmed_seqs)
   }else{
-    randomSets <- lapply(1:(length(aln)-1), function(k, aln, matchedIndex){
-      gapRanges <- do.call(c, lapply(k:(k+1), function(i){
-        matched <- aln[[i]]$match
-        idx <- which(lengths(matched) == 1)
-        tRanges <- unlist(matched)
-        names(tRanges) <- idx
-        tShift <- ifelse(i > 1, start(tSegRanges[i]) - 1, start(tSegRanges[i]))
-        shift(tRanges, shift = tShift - 1)
-      }))
-      gapRanges <- gapRanges[names(gapRanges) %in% matchedIndex]
-      gapRanges <- split(gapRanges, names(gapRanges))
-      gapRanges <- unlist(gaps(gapRanges))
-      gapRanges[as.character(matchedIndex)]
-    }, aln = aln, matchedIndex = matchedIndex)
+    if(length(trim_seg_ir) > 1){
+      random_sets <- lapply(
+        seq_along(aln_seg), function(k, aln_seg, matched_idx){
+          gap_ranges <- do.call(c, lapply(k:(k+1), function(i){
+            matched <- aln_seg[[i]]$match
+            idx <- which(lengths(matched) == 1)
+            t_ranges <- unlist(matched)
+            names(t_ranges) <- idx
+            trim_shift <- ifelse(
+              i > 1, start(trim_seg_ir[i]) - 1, start(trim_seg_ir[i]))
+            shift(t_ranges, shift = trim_shift - 1)
+          }))
+          gap_ranges <- gap_ranges[names(gap_ranges) %in% matched_idx]
+          gap_ranges <- split(gap_ranges, names(gap_ranges))
+          gap_ranges <- unlist(gaps(gap_ranges))
+          gap_ranges[as.character(matched_idx)]
+        }, aln_seg = aln_seg, matched_idx = matched_idx)
+    }else{
+      matched_region <- GRanges(
+        seqnames = as.character(matched_idx), ranges = unlist(aln[matched_idx]))
+      non_ambi_region <- GRanges(
+        seqnames = as.character(matched_idx), 
+        ranges = rep(trim_seg_ir, length(matched_idx)))
+      random_region <- GenomicRanges::setdiff(matched_region, non_ambi_region)
+      random_sets <- ranges(random_region)
+      names(random_sets) <- seqnames(random_region)
+      random_sets <- list(random_sets[as.character(matched_idx)])
+    }
     
-    randomSeqs <- lapply(randomSets, function(ir, matchedIndex, seqs){
+    random_seqs <- lapply(random_sets, function(ir, matchedIndex, seqs){
       narrow(seqs[matchedIndex], start = start(ir), end = end(ir))
     }, matchedIndex = matchedIndex, seqs = seqs)
     
@@ -152,7 +181,7 @@ trim_leading <- function(seqs, trimSequence, phasing = 0L, maxMisMatch = 1L,
     options(scipen = ori.scipen)
     
     return(list(
-      "trimmedSequences" = trimmedSeqs,
-      "randomSequences" = randomSeqs))
+      "trimmedSequences" = trimmed_seqs,
+      "randomSequences" = random_seqs))
   }
 }

@@ -53,8 +53,6 @@ GCTAACGTACGTTTCNNNNNNCGGACATGC    #Longer nucleotide sequence with
 ```
 Using the argument **[collectRandomIDs]** will collect the random sequences from within the leading trimming sequence whenever a match is made. Random sequences are returned in the order in which they appear from 5' to 3' (left to right). Multiple output file names can be given to name each random sequence file captured after the **[collectRandomIDs]** flag. 
 
-Additionally, if random or ambiguous nucleotide sequences are to be used in matching, the argument **[ignoreAmbiguousNts]** can be used to ignore collection of random sequences. The pattern matching will follow the ambiguous nucleotide code.
-
 ## Quality trimming
 By default, seqTrimR will quality trim from the left to right in the reads provided. This feature is controlled by the arguments **[badQualBases]**, **[qualSlidingWindow]**, and **[qualThreshold]**. This feature can be disabled by passing the flag "**[--noQualTrimming]**". **[badQualBases]** is an interger value which specifies how many bases need to have quality scores below the threshold, set by **[qualThreshold]**, within the window (**[qualSlidingWindow]**) before the sequence is trimmed. This process is conducted by ShortRead::trimTailw().
 
@@ -84,8 +82,6 @@ By default, seqTrimR will quality trim from the left to right in the reads provi
 **[--minSeqLength]** Minimum length of trimmed sequence. Any trimmed sequence with a length below this value will be filtered out. Default = 30.
 
 **[--collectRandomIDs]** Option to collect random nucleotide sequences from trimmed portions. If used, provide an output file name.
-
-**[--ignoreAmbiguousNts]**  Conversely, ambiguous nucleotides can be ignored from collection but still enforced in matching for trimming.
 
 **[--noFiltering]** Will not filter reads based on leadTrimSeq, the default behavior.
 

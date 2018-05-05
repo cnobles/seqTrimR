@@ -108,9 +108,9 @@ input_table <- input_table[
   match(c("seqFile :", "output :", "leadTrimSeq :", "overTrimSeq :", 
           "phasing :", "maxMisMatch :", "leadMisMatch :", "overMisMatch :", 
           "overMaxLength :", "overMinLength :", "minSeqLength :", 
-          "collectRandomIDs :", "ignoreAmbiguousNts :", "noFiltering :", 
-          "noQualTrimming :", "badQualBases :", "qualSlidingWindow :", 
-          "qualThreshold :", "compress :", "cores :"),
+          "collectRandomIDs :", "noFiltering :", "noQualTrimming :", 
+          "badQualBases :", "qualSlidingWindow :", "qualThreshold :", 
+          "compress :", "cores :"),
         input_table$Variables),]
 pandoc.title("seqTrimR Inputs")
 pandoc.table(data.frame(input_table, row.names = NULL), 

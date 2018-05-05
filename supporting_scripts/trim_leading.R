@@ -62,6 +62,9 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
       start = sapply(trim_seg_ir, function(x) as.integer(IRanges::start(x))),
       end = sapply(trim_seg_ir, function(x) as.integer(IRanges::end(x))),
       names = names(trim_seg_ir))
+    rand_ir <- IRanges::setdiff(
+      IRanges(start = 1, end = nchar(trim.sequence)),
+      trim_seg_ir)
   }else{
     trim_segments <- trim.sequence
     trim_seg_ir <- unlist(vmatchPattern(trim_segments, trim.sequence))
@@ -121,7 +124,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
       seqs = lead_seqs)
     
     # Identify and trim only sequences that have all required alignments
-    seg_idx <- table(unlist(lapply(lapply(aln, "[[", "idx"), which)))
+    seg_idx <- table(unlist(lapply(lapply(aln_segs, "[[", "idx"), which)))
     seg_idx <- as.numeric(names(seg_idx)[seg_idx == length(trim_seg_ir)])
     matched_idx <- matched_idx[matched_idx %in% seg_idx]
   }
@@ -144,39 +147,17 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
     options(scipen = ori.scipen)
     return(trimmed_seqs)
   }else{
-    if(length(trim_seg_ir) > 1){
-      random_sets <- lapply(
-        seq_along(aln_seg), function(k, aln_seg, matched_idx){
-          gap_ranges <- do.call(c, lapply(k:(k+1), function(i){
-            matched <- aln_seg[[i]]$match
-            idx <- which(lengths(matched) == 1)
-            t_ranges <- unlist(matched)
-            names(t_ranges) <- idx
-            trim_shift <- ifelse(
-              i > 1, start(trim_seg_ir[i]) - 1, start(trim_seg_ir[i]))
-            shift(t_ranges, shift = trim_shift - 1)
-          }))
-          gap_ranges <- gap_ranges[names(gap_ranges) %in% matched_idx]
-          gap_ranges <- split(gap_ranges, names(gap_ranges))
-          gap_ranges <- unlist(gaps(gap_ranges))
-          gap_ranges[as.character(matched_idx)]
-        }, aln_seg = aln_seg, matched_idx = matched_idx)
-    }else{
-      matched_region <- GRanges(
-        seqnames = as.character(matched_idx), ranges = unlist(aln[matched_idx]))
-      non_ambi_region <- GRanges(
-        seqnames = as.character(matched_idx), 
-        ranges = rep(trim_seg_ir, length(matched_idx)))
-      random_region <- GenomicRanges::setdiff(matched_region, non_ambi_region)
-      random_sets <- ranges(random_region)
-      names(random_sets) <- seqnames(random_region)
-      random_sets <- list(random_sets[as.character(matched_idx)])
-    }
-    
-    random_seqs <- lapply(random_sets, function(ir, matched_idx, seqs){
-      narrow(seqs[matched_idx], start = start(ir), end = end(ir))
-    }, matched_idx = matched_idx, seqs = seqs)
-    
+    random_seqs <- lapply(seq_along(rand_ir), function(k, lead_seqs){
+      region <- rand_ir[k]
+      reg_seq <- subseq(trim.sequence, start = start(region), end = end(region))
+      rand_seqs <- narrow(
+        lead_seqs[matched_idx], start = start(region), end = end(region))
+      matched_random_idx <- vmatchPattern(
+        reg_seq, ShortRead::sread(rand_seqs), fixed = FALSE)
+      matched_random_idx <- which(lengths(matched_random_idx) == 1)
+      rand_seqs[matched_random_idx]
+    }, lead_seqs = lead_seqs)
+
     # Return scipen option to original value
     options(scipen = ori.scipen)
     

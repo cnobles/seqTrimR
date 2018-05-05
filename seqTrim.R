@@ -289,12 +289,11 @@ if(args$cores <= 1){
       buster,
       split.seqs,
       trim_leading,
-      trimSequence = args$leadTrimSeq,
+      trim.sequence = args$leadTrimSeq,
       phasing = args$phasing,
-      maxMisMatch = args$leadMisMatch,
-      collectRandomID = all(args$collectRandomIDs != FALSE),
-      ignoreAmbiguousNts = args$ignoreAmbiguousNts,
-      noFiltering = args$noFiltering
+      max.mismatch = args$leadMisMatch,
+      collect.random = all(args$collectRandomIDs != FALSE),
+      filter = !args$noFiltering
     )
   
     if(all(args$collectRandomIDs != FALSE)){
@@ -413,9 +412,8 @@ if(all(args$collectRandomIDs != FALSE)){
       write_seq_files,
       seqs = randomSeqs,
       file = args$collectRandomIDs,
-      MoreArgs = list(
-        seqType = randomType, 
-        compress = args$compress)
+      seqType = randomType,
+      MoreArgs = list(compress = args$compress)
     )
 }}
 

@@ -173,9 +173,9 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
       random_sets <- list(random_sets[as.character(matched_idx)])
     }
     
-    random_seqs <- lapply(random_sets, function(ir, matchedIndex, seqs){
-      narrow(seqs[matchedIndex], start = start(ir), end = end(ir))
-    }, matchedIndex = matchedIndex, seqs = seqs)
+    random_seqs <- lapply(random_sets, function(ir, matched_idx, seqs){
+      narrow(seqs[matched_idx], start = start(ir), end = end(ir))
+    }, matched_idx = matched_idx, seqs = seqs)
     
     # Return scipen option to original value
     options(scipen = ori.scipen)

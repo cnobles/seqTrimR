@@ -21,12 +21,16 @@ write_seq_files <- function(seqs, seqType, file, compress = FALSE){
   if(seqType == "fasta"){
     if(compress){
       if(grepl(".gz$", file)){
-        ShortRead::writeFasta(seqs, file = file, compress = TRUE)    
+        ShortRead::writeFasta(
+          seqs, file = file, compress = TRUE, width = max(width(seqs)))    
       }else{
-        ShortRead::writeFasta(seqs, file = paste0(file, ".gz"), compress = TRUE)
+        ShortRead::writeFasta(
+          seqs, file = paste0(file, ".gz"), 
+          compress = TRUE, width = max(width(seqs)))
       }
     }else{
-      ShortRead::writeFasta(seqs, file = file, compress = FALSE)
+      ShortRead::writeFasta(
+        seqs, file = file, compress = FALSE, width = max(width(seqs)))
     }
   }else{
     if(compress){
@@ -36,7 +40,7 @@ write_seq_files <- function(seqs, seqType, file, compress = FALSE){
         ShortRead::writeFastq(seqs, file = paste0(file, ".gz"), compress = TRUE)
       }
     }else{
-      ShortRead::writeFasta(
+      ShortRead::writeFastq(
         seqs, file = file, compress = FALSE)
     }
   }

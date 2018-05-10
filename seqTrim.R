@@ -156,27 +156,13 @@ if(!all(
     stop("Cannot load supporting scripts. You may need to clone from github again.")
 }
 
-# Determine sequence file type
-seqType <- str_extract(args$seqFile, "fa[\\w]*")
-if(!seqType %in% c("fa", "fasta", "fastq")){
-  stop("Unrecognized sequence file type, please convert to '*.fasta' or '*.fastq'. Gzip compression is acceptable as well.")
-}
-seqType <- ifelse(seqType %in% c("fa", "fasta"), "fasta", "fastq")
-
-# Determine sequence output file type
-outType <- str_extract(args$output, "fa[\\w]*")
-if(!outType %in% c("fa", "fasta", "fastq")){
-  stop("Unrecognized output file type, please choose '*.fasta' or '*.fastq'.")
-}
-outType <- ifelse(outType %in% c("fa", "fasta"), "fasta", "fastq")
+# Determine sequence file types
+seqType <- seq_file_type(args$seqFile)
+outType <- seq_file_type(args$output)
 
 # Determine random output file type
 if(all(args$collectRandomIDs != FALSE)){
-  randomType <- str_extract(args$collectRandomIDs, "fa[\\w]*")
-  if(all(!randomType %in% c("fa", "fasta", "fastq"))){
-    stop("Unrecognized randomID output file type, please choose '*.fasta' or '*.fastq'.")
-  }
-  randomType <- ifelse(randomType %in% c("fa", "fasta"), "fasta", "fastq")
+  randomType <- seq_file_type(args$collectRandomIDs)
 }
 
 # Read sequence file
@@ -194,8 +180,9 @@ pandoc.table(input_tbl, caption = "Input sequence information.")
 if(length(seqs) == 0){
   message(
     "No reads remaining to trim. Terminating script after writing output.")
-  write_seq_files(
-    seqs = seqs, seqType = outType, file = args$output,
+  write_null_file(
+    file = args$output, 
+    writeRandom = args$collectRandomIDs, 
     compress = args$compress)
   q()
 }
@@ -223,8 +210,9 @@ if(!args$noQualTrimming & seqType == "fastq"){
 if(length(seqs) == 0){
   message(
     "No reads remaining to trim. Terminating script after writing output.")
-  write_seq_files(
-    seqs = seqs, seqType = outType, file = args$output,
+  write_null_file(
+    file = args$output, 
+    writeRandom = args$collectRandomIDs, 
     compress = args$compress)
   q()
 }
@@ -357,8 +345,9 @@ if(args$cores <= 1){
 if(length(seqs) == 0){
   message(
     "No reads remaining to trim. Terminating script after writing output.")
-  write_seq_files(
-    seqs = trimmedSeqs, seqType = outType, file = args$output,
+  write_null_file(
+    file = args$output, 
+    writeRandom = args$collectRandomIDs, 
     compress = args$compress)
   q()
 }
@@ -388,19 +377,11 @@ if(all(args$collectRandomIDs != FALSE)){
 # Write sequence file.
 write_seq_files(
   seqs = trimmedSeqs, 
-  seqType = outType, 
   file = args$output,
   compress = args$compress)
 
 # Write randomID file.
 if(all(args$collectRandomIDs != FALSE)){
-  if(length(randomSeqs) == 1){
-    write_seq_files(
-      seqs = randomSeqs[[1]],
-      seqType = randomType,
-      file = args$collectRandomIDs,
-      compress = args$compress)
-  }else{
     if(length(args$collectRandomIDs) != length(randomSeqs)){
       newFileName <- unlist(strsplit(args$collectRandomIDs[[1]], ".fa"))
       newNames <- paste0(
@@ -412,10 +393,9 @@ if(all(args$collectRandomIDs != FALSE)){
       write_seq_files,
       seqs = randomSeqs,
       file = args$collectRandomIDs,
-      seqType = randomType,
       MoreArgs = list(compress = args$compress)
     )
-}}
+}
 
 cat("Script completed.\n")
 q()

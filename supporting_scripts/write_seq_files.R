@@ -90,7 +90,9 @@ write_null_file <- function(file, seqType, writeRandom = FALSE,
 #' @author Christopher Nobles, Ph.D.
 
 seq_file_type <- function(file){
-  seqType <- str_extract(as.character(file), "fa[\\w]*")
+  file <- unlist(strsplit(file, "/"))
+  file <- file[length(file)]
+  seqType <- stringr::str_extract(as.character(file), "fa[\\w]*")
   if(any(!seqType %in% c("fa", "fasta", "fastq"))){
     stop("Unrecognized seq file type, please choose '*.fasta' or '*.fastq'.")
   }

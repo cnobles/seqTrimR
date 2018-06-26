@@ -117,10 +117,10 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
           tSeq, ShortRead::sread(alnSeqs), 
           max.mismatch = misMatch, fixed = FALSE)
       
-        if(any(lengths(aln) > 1)){
+        if(any(S4Vectors::lengths(aln) > 1)){
           stop("\nAlignment too permissive. Ambiguous mapping of sequences.
              Please adjust max.mismatch criteria.")}
-        idx <- lengths(aln) == 1 
+        idx <- S4Vectors::lengths(aln) == 1 
         return(list("match" = aln, "idx" = idx))
       },
       trim_seg_ir = trim_seg_ir,

@@ -41,7 +41,7 @@ trim_overreading <- function(seqs, trimSequence,
       vmp <- Biostrings::vmatchPattern(
         trimSeq, ShortRead::sread(seqs), max.mismatch = mismatch, fixed = FALSE)
       idx <- which(S4Vectors::lengths(vmp) >= 1)
-      idx <- S4Vectors::Rle(values = idx, lengths = lengths(vmp[idx]))
+      idx <- S4Vectors::Rle(values = idx, lengths = S4Vectors::lengths(vmp[idx]))
       ir <- unlist(vmp)
       names(ir) <- idx
       ir

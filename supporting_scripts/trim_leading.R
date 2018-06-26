@@ -51,23 +51,25 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   }
   
   # Phasing will ignore the first number of nucleotides of the sequence
-  seqs <- narrow(seqs, start = 1L + phasing)
+  seqs <- Biostrings::narrow(seqs, start = 1L + phasing)
   
   # Determine the structure of ambiguous sequences within the trim.sequence
   ambi_present <- stringr::str_detect(trim.sequence, pattern = "[^A^T^G^C]")
   if(ambi_present & collect.random){
     trim_segments <- unlist(strsplit(trim.sequence, "[^A^T^G^C]+"))
-    trim_seg_ir <- sapply(trim_segments, vmatchPattern, subject = trim.sequence)
+    trim_seg_ir <- sapply(
+      trim_segments, Biostrings::vmatchPattern, subject = trim.sequence)
     trim_seg_ir <- IRanges(
       start = sapply(trim_seg_ir, function(x) as.integer(IRanges::start(x))),
       end = sapply(trim_seg_ir, function(x) as.integer(IRanges::end(x))),
       names = names(trim_seg_ir))
     rand_ir <- IRanges::setdiff(
-      IRanges(start = 1, end = nchar(trim.sequence)),
+      IRanges::IRanges(start = 1, end = nchar(trim.sequence)),
       trim_seg_ir)
   }else{
     trim_segments <- trim.sequence
-    trim_seg_ir <- unlist(vmatchPattern(trim_segments, trim.sequence))
+    trim_seg_ir <- unlist(
+      Biostrings::vmatchPattern(trim_segments, trim.sequence))
     names(trim_seg_ir) <- trim_segments
   }
   
@@ -85,32 +87,33 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   
   # Remove seqs that do not have enough sequence for analysis
   # Cutoff = length(trim.sequence)
-  seqs <- seqs[width(seqs) >= nchar(trim.sequence)]
-  lead_seqs <- narrow(
+  seqs <- seqs[Biostrings::width(seqs) >= nchar(trim.sequence)]
+  lead_seqs <- Biostrings::narrow(
     seqs, 
     start = 1, 
     end = ifelse(
-      width(seqs) >= nchar(trim.sequence) + 1, 
-      rep(nchar(trim.sequence) + 1, length(seqs)), width(seqs)))
+      Biostrings::width(seqs) >= nchar(trim.sequence) + 1, 
+      rep(nchar(trim.sequence) + 1, length(seqs)), Biostrings::width(seqs)))
   
   # Align whole sequence to 5' end of sequence
-  aln <- vmatchPattern(
+  aln <- Biostrings::vmatchPattern(
     trim.sequence, ShortRead::sread(lead_seqs), 
     max.mismatch = sum(max.mismatch), fixed = FALSE)
   
-  matched_idx <- which(lengths(aln) == 1)
+  matched_idx <- which(S4Vectors::lengths(aln) == 1)
   
   # Serially align segment(s) from trim.sequence to seqs
   if(length(trim_seg_ir) > 1){
     aln_segs <- lapply(seq_along(trim_seg_ir), function(i, trim_seg_ir, seqs){
         tSeq <- names(trim_seg_ir[i])
         misMatch <- trim_seg_ir@metadata$misMatch[i]
-        alnSeqs <- narrow(
+        alnSeqs <- Biostrings::narrow(
           seqs,
           start = ifelse(
-            start(trim_seg_ir[i]) == 1L, 1, start(trim_seg_ir[i]) - 1),
-          end = end(trim_seg_ir[i]) + 1)
-        aln <- vmatchPattern(
+            IRanges::start(trim_seg_ir[i]) == 1L, 
+            1, IRanges::start(trim_seg_ir[i]) - 1),
+          end = IRanges::end(trim_seg_ir[i]) + 1)
+        aln <- Biostrings::vmatchPattern(
           tSeq, ShortRead::sread(alnSeqs), 
           max.mismatch = misMatch, fixed = FALSE)
       
@@ -133,12 +136,12 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   matched_seqs <- seqs[matched_idx]
   trim_shift <- ifelse(length(trim_seg_ir) > 1, 2, 1)
   matched_starts <- unlist(aln@ends[matched_idx]) + 1
-  trimmed_seqs <- narrow(matched_seqs, start = matched_starts)
+  trimmed_seqs <- Biostrings::narrow(matched_seqs, start = matched_starts)
 
   if(!filter){
     unmatched_idx <- which(!seq_along(seqs) %in% matched_idx)
     untrimmed_seqs <- seqs[unmatched_idx]
-    trimmed_seqs <- append(trimmed_seqs, untrimmed_seqs)
+    trimmed_seqs <- Biostrings::append(trimmed_seqs, untrimmed_seqs)
     trimmed_seqs <- trimmed_seqs[order(c(matched_idx, unmatched_idx))]
   }
   
@@ -149,12 +152,13 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   }else{
     random_seqs <- lapply(seq_along(rand_ir), function(k, lead_seqs){
       region <- rand_ir[k]
-      reg_seq <- subseq(trim.sequence, start = start(region), end = end(region))
-      rand_seqs <- narrow(
-        lead_seqs[matched_idx], start = start(region), end = end(region))
-      matched_random_idx <- vmatchPattern(
+      reg_seq <- Biostrings::subseq(
+        trim.sequence, start = IRanges::start(region), end = IRanges::end(region))
+      rand_seqs <- Biostrings::narrow(
+        lead_seqs[matched_idx], start = IRanges::start(region), end = IRanges::end(region))
+      matched_random_idx <- Biostrings::vmatchPattern(
         reg_seq, ShortRead::sread(rand_seqs), fixed = FALSE)
-      matched_random_idx <- which(lengths(matched_random_idx) == 1)
+      matched_random_idx <- which(S4Vectors::lengths(matched_random_idx) == 1)
       rand_seqs[matched_random_idx]
     }, lead_seqs = lead_seqs)
 

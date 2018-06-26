@@ -51,7 +51,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   }
   
   # Phasing will ignore the first number of nucleotides of the sequence
-  seqs <- Biostrings::narrow(seqs, start = 1L + phasing)
+  seqs <- IRanges::narrow(seqs, start = 1L + phasing)
   
   # Determine the structure of ambiguous sequences within the trim.sequence
   ambi_present <- stringr::str_detect(trim.sequence, pattern = "[^A^T^G^C]")
@@ -88,7 +88,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   # Remove seqs that do not have enough sequence for analysis
   # Cutoff = length(trim.sequence)
   seqs <- seqs[Biostrings::width(seqs) >= nchar(trim.sequence)]
-  lead_seqs <- Biostrings::narrow(
+  lead_seqs <- IRanges::narrow(
     seqs, 
     start = 1, 
     end = ifelse(
@@ -107,7 +107,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
     aln_segs <- lapply(seq_along(trim_seg_ir), function(i, trim_seg_ir, seqs){
         tSeq <- names(trim_seg_ir[i])
         misMatch <- trim_seg_ir@metadata$misMatch[i]
-        alnSeqs <- Biostrings::narrow(
+        alnSeqs <- IRanges::narrow(
           seqs,
           start = ifelse(
             IRanges::start(trim_seg_ir[i]) == 1L, 
@@ -136,7 +136,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   matched_seqs <- seqs[matched_idx]
   trim_shift <- ifelse(length(trim_seg_ir) > 1, 2, 1)
   matched_starts <- unlist(aln@ends[matched_idx]) + 1
-  trimmed_seqs <- Biostrings::narrow(matched_seqs, start = matched_starts)
+  trimmed_seqs <- IRanges::narrow(matched_seqs, start = matched_starts)
 
   if(!filter){
     unmatched_idx <- which(!seq_along(seqs) %in% matched_idx)
@@ -154,7 +154,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
       region <- rand_ir[k]
       reg_seq <- Biostrings::subseq(
         trim.sequence, start = IRanges::start(region), end = IRanges::end(region))
-      rand_seqs <- Biostrings::narrow(
+      rand_seqs <- IRanges::narrow(
         lead_seqs[matched_idx], start = IRanges::start(region), end = IRanges::end(region))
       matched_random_idx <- Biostrings::vmatchPattern(
         reg_seq, ShortRead::sread(rand_seqs), fixed = FALSE)

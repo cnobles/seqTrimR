@@ -62,7 +62,7 @@ trim_overreading <- function(seqs, trimSequence,
     stop("Issues with overread trimming, please adjust input parameters.")}
   
   # Trim sequences
-  seqs[idx] <- Biostrings::narrow(
+  seqs[idx] <- IRanges::narrow(
     seqs[idx], end = IRanges::start(alignments)-1)
   return(seqs)
 }

@@ -40,19 +40,19 @@ trim_overreading <- function(seqs, trimSequence,
       mismatch <- round(nchar(trimSeq) - percentID*nchar(trimSeq))
       vmp <- Biostrings::vmatchPattern(
         trimSeq, ShortRead::sread(seqs), max.mismatch = mismatch, fixed = FALSE)
-      idx <- which(S4Vectors::lengths(vmp) >= 1)
-      idx <- S4Vectors::Rle(values = idx, lengths = S4Vectors::lengths(vmp[idx]))
+      idx <- which(BiocGenerics::lengths(vmp) >= 1)
+      idx <- S4Vectors::Rle(values = idx, lengths = BiocGenerics::lengths(vmp[idx]))
       ir <- unlist(vmp)
       names(ir) <- idx
       ir
     }, seqs = seqs, percentID = percentID))
   
-  seqWidths <- GenomicRanges::width(seqs[as.numeric(names(alignments))])
+  seqWidths <- Biostrings::width(seqs[as.numeric(names(alignments))])
   alignments <- alignments[
-    GenomicRanges::width(alignments) == nchar(trimSequence) | 
-    GenomicRanges::end(alignments) == seqWidths]
+    IRanges::width(alignments) == nchar(trimSequence) | 
+    IRanges::end(alignments) == seqWidths]
   alignments <- split(alignments, names(alignments))
-  alignments <- unlist(GenomicRanges::reduce(alignments, min.gapwidth = 1000000))
+  alignments <- unlist(IRanges::reduce(alignments, min.gapwidth = 1000000))
   alignments <- alignments[order(as.numeric(names(alignments)))]
   idx <- as.numeric(names(alignments))
   
@@ -60,7 +60,7 @@ trim_overreading <- function(seqs, trimSequence,
     stop("Issues with overread trimming, please adjust input parameters.")}
   
   # Trim sequences
-  seqs[idx] <- GenomicRanges::narrow(
-    seqs[idx], end = GenomicRanges::start(alignments)-1)
+  seqs[idx] <- Biostrings::narrow(
+    seqs[idx], end = IRanges::start(alignments)-1)
   return(seqs)
 }

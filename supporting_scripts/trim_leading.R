@@ -44,12 +44,6 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   ori.scipen <- getOption("scipen")
   options(scipen = 99)
   
-  if(length(max.mismatch) > 1){
-    message("\nSum of max.mismatch is being used for max.mismatch since
-            ignoreAmbiguousNts is being chosen.")
-    max.mismatch <- sum(max.mismatch)
-  }
-  
   # Phasing will ignore the first number of nucleotides of the sequence
   seqs <- IRanges::narrow(seqs, start = 1L + phasing)
   
@@ -87,7 +81,7 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
   
   # Remove seqs that do not have enough sequence for analysis
   # Cutoff = length(trim.sequence)
-  seqs <- seqs[Biostrings::width(seqs) >= nchar(trim.sequence)]
+  seqs <- seqs[Biostrings::width(seqs) > nchar(trim.sequence)]
   lead_seqs <- IRanges::narrow(
     seqs, 
     start = 1, 
@@ -153,9 +147,13 @@ trim_leading <- function(seqs, trim.sequence, phasing = 0L, max.mismatch = 1L,
     random_seqs <- lapply(seq_along(rand_ir), function(k, lead_seqs){
       region <- rand_ir[k]
       reg_seq <- Biostrings::subseq(
-        trim.sequence, start = IRanges::start(region), end = IRanges::end(region))
+        trim.sequence, 
+        start = IRanges::start(region), 
+        end = IRanges::end(region))
       rand_seqs <- IRanges::narrow(
-        lead_seqs[matched_idx], start = IRanges::start(region), end = IRanges::end(region))
+        lead_seqs[matched_idx], 
+        start = IRanges::start(region), 
+        end = IRanges::end(region))
       matched_random_idx <- Biostrings::vmatchPattern(
         reg_seq, ShortRead::sread(rand_seqs), fixed = FALSE)
       matched_random_idx <- which(S4Vectors::lengths(matched_random_idx) == 1)

@@ -217,6 +217,15 @@ if(length(seqs) == 0){
   q()
 }
 
+# Remove sequences that do not contain enough sequence information
+seqs <- seqs[
+  width(seqs) >= (args$minSeqLength + nchar(args$leadTrimSeq) + args$phasing)]
+
+len_trimmed_tbl <- log_seq_data(seqs)
+pandoc.table(
+  len_trimmed_tbl, 
+  caption = "Sequence information remaining after minimum length trimming.")
+
 # Trim sequences, either on a single core or multiple cores
 if(args$cores <= 1){
   # Trim 5' end or leading end. Conditionals present for added features.
@@ -352,14 +361,30 @@ if(length(seqs) == 0){
   q()
 }
 
-# Filter sequences by minimum length.
+# Second check for sequences below minimum length
 trimmedSeqs <- trimmedSeqs[width(trimmedSeqs) >= args$minSeqLength]
 
+# Recover filtered reads if requested
+if(args$noFiltering){
+  if(seqType == "fasta"){
+    inputSeqs <- ShortRead::readFasta(args$seqFile)
+  }else{
+    inputSeqs <- ShortRead::readFastq(args$seqFile)
+  }
+  matchedIdx <- which(id(inputSeqs) %in% id(trimmedSeqs))
+  unmatchedIdx <- which(!id(inputSeqs) %in% id(trimmedSeqs))
+  untrimmedSeqs <- inputSeqs[unmatchedIdx]
+  outputSeqs <- Biostrings::append(trimmedSeqs, untrimmedSeqs)
+  outputSeqs <- outputSeqs[order(c(matchedIdx, unmatchedIdx))]
+}else{
+  outputSeqs <- trimmedSeqs
+}
+
 # Log info
-len_trimmed_tbl <- log_seq_data(trimmedSeqs)
+final_trimmed_tbl <- log_seq_data(outputSeqs)
 pandoc.table(
   len_trimmed_tbl, 
-  caption = "Sequence information remaining after minimum length trimming.")
+  caption = "Sequence information remaining.")
 
 # Collect RandomIDs if requested
 if(all(args$collectRandomIDs != FALSE)){
@@ -376,7 +401,7 @@ if(all(args$collectRandomIDs != FALSE)){
 
 # Write sequence file.
 write_seq_files(
-  seqs = trimmedSeqs, 
+  seqs = outputSeqs, 
   file = args$output,
   compress = args$compress)
 

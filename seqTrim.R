@@ -388,7 +388,7 @@ pandoc.table(
 
 # Write stats if requested
 if(args$stat != FALSE){
-  sampleName <- unlist(strsplit(args$seqFile, "/"))
+  sampleName <- unlist(strsplit(args$output, "/"))
   sampleName <- unlist(
     strsplit(sampleName[length(sampleName)], ".fa", fixed = TRUE))[1]
   write.table(

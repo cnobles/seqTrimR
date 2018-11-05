@@ -4,67 +4,67 @@ suppressMessages(library("argparse"))
 suppressMessages(library("pander"))
 panderOptions("table.style", "simple")
 
-code_dir <- dirname(
-  sub("--file=", "", grep("--file=", commandArgs(trailingOnly = FALSE), value = TRUE)))
+code_dir <- dirname(sub("--file=", "", grep(
+  "--file=", commandArgs(trailingOnly = FALSE), value = TRUE)))
+
+desc <- yaml::yaml.load_file(file.path(code_dir, "descriptions.yml"))
 
 #' Set up and gather command line arguments
-parser <- ArgumentParser(
-  description = "R-based nucleotide sequence trimmer. Trim both leading and overreading ends of sequences.")
+parser <- ArgumentParser(description = desc$program_short_description)
 parser$add_argument(
-  "seqFile", nargs = 1, type = "character",
-  help = "Sequence file to trim, either fasta or fastq format.")
+  "seqFile", nargs = 1, type = "character", help = desc$seqFile)
 parser$add_argument(
-  "-o", "--output", nargs = 1, type = "character", help = "Output file name.")
+  "-o", "--output", nargs = 1, type = "character", help = desc$output)
 parser$add_argument(
   "-l", "--leadTrimSeq", nargs = 1, type = "character", default = ".",
-  help = "Sequence to trim from 5' end of reads, or the leading sequence. See README for sequence flexibility.")
+  help = desc$leadTrimSeq)
 parser$add_argument(
   "-r", "--overTrimSeq", nargs = 1, type = "character", default = ".",
-  help = "Sequence to trim from 3' end of reads, or the overreading sequence. See README for sequence flexibility.")
+  help = desc$overTrimSeq)
 parser$add_argument(
   "--phasing", nargs = 1, type = "integer", default = 0, 
-  help = "Number of nucleotides to remove from 5' end of sequence before trimming. Default = 0.")
+  help = desc$phasing)
 parser$add_argument(
-  "--maxMisMatch", nargs = 1, type = "integer",
-  help = "Maximum allowable mismatches in leading or overreading trim sequences.")
+  "--maxMismatch", nargs = 1, type = "integer", help = desc$maxMismatch)
 parser$add_argument(
-  "--leadMisMatch", nargs = "+", type = "integer", default = 0,
-  help = "Maximum allowable mismatches in leading trim sequence. Default = 0. If multiple matching regions for leading seq, separate mismatches allowed using a space.")
+  "--leadMismatch", nargs = "+", type = "integer", default = 0,
+  help = desc$leadMismatch)
 parser$add_argument(
-  "--overMisMatch", nargs = 1, type = "integer", default = 0,
-  help = "Maximum allowable mismatches in overreading trim sequence. Default = 0.")
+  "--overMismatch", nargs = 1, type = "integer", default = 0,
+  help = desc$overMismatch)
 parser$add_argument(
   "--overMaxLength", nargs = 1, type = "integer", default = 20,
-  help = "Maximum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 20 nts.")
+  help = desc$overMaxLength)
 parser$add_argument(
   "--overMinLength", nargs = 1, type = "integer", default = 3,
-  help = "Minimum length to consider of the overTrimSeq to use for alignments. See README for in depth explanation of this feature. Default 3 nts.")
+  help = desc$overMinLength)
 parser$add_argument(
   "--minSeqLength", nargs = 1, type = "integer", default = 30,
-  help = "Minimum length of trimmed sequence. Any trimmed sequence with a length below this value will be filtered out. Default = 30")
+  help = desc$minSeqLength)
 parser$add_argument(
   "--collectRandomIDs", nargs = "+", type = "character", default = FALSE,
-  help = "Option to collect random nucleotide sequences from trimmed portions. If used, provide an output file name.")
+  help = desc$collectRandomIDs)
 parser$add_argument(
   "--noFiltering", action = "store_true",
-  help = "Will not filter reads based on leadTrimSeq, the default behavior.")
+  help = desc$noFiltering)
 parser$add_argument(
   "--noQualTrimming", action = "store_true",
-  help = "Will not quality trim reads, the default behavior.")
+  help = desc$noQualTrimming)
 parser$add_argument(
   "--badQualBases", nargs = 1, type = "integer", default = 5,
-  help = "Number of bases below threshold in sliding window before read is trimmed. Default = 5.")
+  help = desc$basQualBases)
 parser$add_argument(
   "--qualSlidingWindow", nargs = 1, type = "integer", default = 10,
-  help = "Slinding window size for which to assess quality scores below threshold. Default = 10.")
+  help = desc$qualSlidingWindow)
 parser$add_argument(
   "--qualThreshold", nargs = 1, type = "character", default = '?',
-  help = "Quality threshold for trimming, minimum allowable score. Default = '?', Q30.")
+  help = desc$qualThreshold)
 parser$add_argument(
-  "--compress", action = "store_true", help = "Output fastq files are gzipped.")
+  "--stat", nargs = 1, type = "character", default = FALSE, help = desc$stat)
 parser$add_argument(
-  "-c", "--cores", nargs = 1, default = 1, type = "integer", 
-  help = "Max cores to be used. If 0 or 1 (default), program will not utilize parallel processing.")
+  "--compress", action = "store_true", help = desc$compress)
+parser$add_argument(
+  "-c", "--cores", nargs = 1, default = 1, type = "integer", help = desc$cores)
 
 args <- parser$parse_args(commandArgs(trailingOnly = TRUE))
 
@@ -72,9 +72,9 @@ if(is.null(args$seqFile)){
   stop("Please choose a sequence file (fasta or fastq).")
 }
 
-if(!is.null(args$maxMisMatch)){
-  args$leadMisMatch <- args$maxMisMatch
-  args$overMisMatch <- args$maxMisMatch
+if(!is.null(args$maxMismatch)){
+  args$leadMismatch <- args$maxMismatch
+  args$overMismatch <- args$maxMismatch
 }
 
 if(args$overMaxLength == 0){
@@ -106,11 +106,11 @@ input_table <- data.frame(
     paste(args[[i]], collapse = ", ")}))
 input_table <- input_table[
   match(c("seqFile :", "output :", "leadTrimSeq :", "overTrimSeq :", 
-          "phasing :", "maxMisMatch :", "leadMisMatch :", "overMisMatch :", 
+          "phasing :", "maxMismatch :", "leadMismatch :", "overMismatch :", 
           "overMaxLength :", "overMinLength :", "minSeqLength :", 
           "collectRandomIDs :", "noFiltering :", "noQualTrimming :", 
           "badQualBases :", "qualSlidingWindow :", "qualThreshold :", 
-          "compress :", "cores :"),
+          "stat :", "compress :", "cores :"),
         input_table$Variables),]
 pandoc.title("seqTrimR Inputs")
 pandoc.table(data.frame(input_table, row.names = NULL), 
@@ -234,7 +234,7 @@ if(args$cores <= 1){
       seqs,
       trim.sequence = args$leadTrimSeq,
       phasing = args$phasing,
-      max.mismatch = args$leadMisMatch,
+      max.mismatch = args$leadMismatch,
       collect.random = all(args$collectRandomIDs != FALSE),
       filter = !args$noFiltering)
   }else{
@@ -255,7 +255,7 @@ if(args$cores <= 1){
   
   if(nchar(args$overTrimSeq) > 0){
     # Determine percent identity from allowable mismatch.
-    percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
+    percentID <- (nchar(args$overTrimSeq) - args$overMismatch) / 
       nchar(args$overTrimSeq)
   
     # Trim 3' end or overreading protion of sequences.
@@ -288,7 +288,7 @@ if(args$cores <= 1){
       trim_leading,
       trim.sequence = args$leadTrimSeq,
       phasing = args$phasing,
-      max.mismatch = args$leadMisMatch,
+      max.mismatch = args$leadMismatch,
       collect.random = all(args$collectRandomIDs != FALSE),
       filter = !args$noFiltering
     )
@@ -325,7 +325,7 @@ if(args$cores <= 1){
       trimmedSeqs, 
       ceiling(seq_along(trimmedSeqs)/(length(trimmedSeqs)/args$cores)))
     
-    percentID <- (nchar(args$overTrimSeq) - args$overMisMatch) / 
+    percentID <- (nchar(args$overTrimSeq) - args$overMismatch) / 
       nchar(args$overTrimSeq)
   
     # Trim 3' end or overreading protion of the sequence.
@@ -383,8 +383,22 @@ if(args$noFiltering){
 # Log info
 final_trimmed_tbl <- log_seq_data(outputSeqs)
 pandoc.table(
-  len_trimmed_tbl, 
+  final_trimmed_tbl, 
   caption = "Sequence information remaining.")
+
+# Write stats if requested
+if(args$stat != FALSE){
+  sampleName <- unlist(strsplit(args$seqFile, "/"))
+  sampleName <- unlist(
+    strsplit(sampleName[length(sampleName)], ".fa", fixed = TRUE))[1]
+  write.table(
+    data.frame(
+      sampleName = sampleName,
+      metric = "reads",
+      count = length(outputSeqs)),
+    file = args$stat,
+    sep = ",", row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
 
 # Collect RandomIDs if requested
 if(all(args$collectRandomIDs != FALSE)){

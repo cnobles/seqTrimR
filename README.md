@@ -93,6 +93,8 @@ By default, seqTrimR will quality trim from the left to right in the reads provi
 
 **[--qualThreshold]** Quality threshold for trimming, minimum allowable score. Default = '?', Q30.
 
+**[--stat]** File name to be written in output directory of read couts for each sample. CSV file format. ie. test.stat.csv.
+
 **[--compress]** Output fastq/fasta files are gzipped.
 
 **[-c, --cores]** Max cores to be used. If 0 (default), program will not utilize parallel processing.

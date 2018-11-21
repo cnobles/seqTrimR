@@ -183,6 +183,7 @@ if(length(seqs) == 0){
   write_null_file(
     file = args$output, 
     writeRandom = args$collectRandomIDs, 
+    stat = args$stat,
     compress = args$compress)
   q()
 }
@@ -213,6 +214,7 @@ if(length(seqs) == 0){
   write_null_file(
     file = args$output, 
     writeRandom = args$collectRandomIDs, 
+    stat = args$stat,
     compress = args$compress)
   q()
 }
@@ -357,6 +359,7 @@ if(length(seqs) == 0){
   write_null_file(
     file = args$output, 
     writeRandom = args$collectRandomIDs, 
+    stat = args$stat,
     compress = args$compress)
   q()
 }

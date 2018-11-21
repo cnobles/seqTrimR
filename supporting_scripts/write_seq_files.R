@@ -55,7 +55,7 @@ write_seq_files <- function(seqs, file, compress = FALSE){
 #' written or leave it uncompressed. Default is FALSE, or uncompressed.
 #' @author Christopher Nobles, Ph.D.
 
-write_null_file <- function(file, seqType, writeRandom = FALSE, 
+write_null_file <- function(file, seqType, stat = FALSE, writeRandom = FALSE,
                             compress = FALSE){
   packs <- c("Biostrings", "ShortRead")
   packsLoaded <- suppressMessages(sapply(packs, require, character.only = TRUE))
@@ -70,6 +70,21 @@ write_null_file <- function(file, seqType, writeRandom = FALSE,
   # Write empty file
   write_seq_files(null_seqs, file, compress = compress)
   
+  # Write zero stat
+  if(stat != FALSE){
+    sampleName <- unlist(strsplit(file, "/"))
+    sampleName <- unlist(
+      strsplit(sampleName[length(sampleName)], ".fa", fixed = TRUE))[1]
+    write.table(
+      data.frame(
+        sampleName = sampleName,
+        metric = "reads",
+        count = length(null_seqs)),
+      file = stat,
+      sep = ",", row.names = FALSE, col.names = FALSE, quote = FALSE)
+  }
+  
+  # Write empty random sequence file
   if(writeRandom != FALSE){
     null <- lapply(writeRandom, function(x, compress){
       if(seq_file_type(x) == "fasta"){
